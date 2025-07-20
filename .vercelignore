@@ -1,0 +1,7 @@
+bot/
+scripts/
+.git/
+*.sh
+update-bot-url.js
+deploy-commands.sh
+install.sh 
