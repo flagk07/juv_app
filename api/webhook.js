@@ -138,8 +138,10 @@ export default async function handler(req, res) {
 
   try {
     const update = req.body;
+    console.log('🔍 Webhook received:', JSON.stringify(update, null, 2));
     
-    if (!update.message) {
+    if (!update.message && !update.callback_query) {
+      console.log('🔍 No message or callback_query found');
       return res.status(200).json({ ok: true });
     }
 
@@ -297,11 +299,15 @@ export default async function handler(req, res) {
 
     // Handle callback queries (button presses)
     if (update.callback_query) {
+      console.log('🔍 Callback query received:', update.callback_query);
+      
       const callbackQuery = update.callback_query;
       const chatId = callbackQuery.message.chat.id;
       const userId = callbackQuery.from.id;
       const username = callbackQuery.from.username;
       const data = callbackQuery.data;
+      
+      console.log('🔍 Processing callback:', { chatId, userId, username, data });
 
       if (data === 'help_assistant' || data === 'ai_assistant') {
         await logUserAction(userId, username, 'call_support');
@@ -319,7 +325,9 @@ export default async function handler(req, res) {
         );
       }
       else if (data === 'stats') {
+        console.log('📊 Stats button pressed by user:', userId);
         const adminId = process.env.ADMIN_ID || '195830791';
+        console.log('📊 Admin ID:', adminId, 'User ID:', userId.toString());
         
         if (userId.toString() === adminId) {
           try {
