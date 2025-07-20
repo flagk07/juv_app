@@ -1,0 +1,296 @@
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+// OpenAI integration
+async function callOpenAI(question) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: `Вы - эксперт-консультант ювелирного магазина JUV. 
+
+Вы помогаете клиентам с:
+- Выбором ювелирных изделий
+- Информацией о камнях, металлах, пробах
+- Уходом за украшениями  
+- Подбором размера
+- Рекомендациями по стилю
+- Ценовыми консультациями
+
+Отвечайте дружелюбно, профессионально и информативно. 
+Если вопрос не связан с ювелирными изделиями, вежливо перенаправьте разговор на тему украшений.
+Длина ответа - до 500 символов.`
+          },
+          {
+            role: 'user',
+            content: question
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.7
+      })
+    });
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || 'Извините, не смог обработать ваш вопрос.';
+  } catch (error) {
+    console.error('OpenAI Error:', error);
+    return 'Извините, произошла ошибка при обработке вашего вопроса.';
+  }
+}
+
+// Logging function
+async function logUserAction(telegramId, username, actionType, metadata = null) {
+  try {
+    const { error } = await supabase
+      .from('logs')
+      .insert({
+        telegram_id: telegramId,
+        telegram_username: username,
+        action_type: actionType,
+        metadata: metadata
+      });
+    
+    if (error) {
+      console.error('Error logging user action:', error);
+    }
+  } catch (err) {
+    console.error('Failed to log user action:', err);
+  }
+}
+
+// Create user if not exists
+async function ensureUser(telegramId, username) {
+  try {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('telegram_id', telegramId)
+      .single();
+
+    if (!existingUser) {
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert({
+          telegram_id: telegramId,
+          telegram_username: username
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newUser;
+    }
+
+    return existingUser;
+  } catch (error) {
+    console.error('Error ensuring user:', error);
+    return null;
+  }
+}
+
+// Send message to Telegram
+async function sendMessage(chatId, text, replyMarkup = null) {
+  const url = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
+  
+  const payload = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'HTML'
+  };
+
+  if (replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending message:', error);
+    return null;
+  }
+}
+
+// Main webhook handler
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const update = req.body;
+    
+    if (!update.message) {
+      return res.status(200).json({ ok: true });
+    }
+
+    const message = update.message;
+    const chatId = message.chat.id;
+    const userId = message.from.id;
+    const username = message.from.username;
+    const text = message.text;
+
+    // Ensure user exists
+    await ensureUser(userId, username);
+
+    // Handle commands
+    if (text === '/start') {
+      await logUserAction(userId, username, 'start_bot');
+      
+      const firstName = message.from.first_name || 'Друг';
+      const mainMenu = {
+        inline_keyboard: [
+          [
+            {
+              text: '🛍 Открыть магазин',
+              web_app: { url: 'https://juv-app.vercel.app/' }
+            }
+          ],
+          [
+            {
+              text: '🤖 AI-помощник',
+              callback_data: 'ai_assistant'
+            }
+          ]
+        ]
+      };
+
+      await sendMessage(
+        chatId,
+        `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
+        `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
+        `Выберите действие:`,
+        mainMenu
+      );
+    }
+    else if (text === '/shop') {
+      await logUserAction(userId, username, 'open_webapp');
+      
+      const shopMenu = {
+        inline_keyboard: [
+          [
+            {
+              text: 'Открыть магазин',
+              web_app: { url: 'https://juv-app.vercel.app/' }
+            }
+          ]
+        ]
+      };
+
+      await sendMessage(
+        chatId,
+        '🛍 Добро пожаловать в магазин JUV!\n\nОткройте наш каталог украшений:',
+        shopMenu
+      );
+    }
+    else if (text === '/assistant') {
+      await logUserAction(userId, username, 'call_support');
+      
+      await sendMessage(
+        chatId,
+        '🤖 AI-помощник JUV активирован!\n\n' +
+        'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
+      );
+    }
+    else if (text === '/help') {
+      await sendMessage(
+        chatId,
+        '📋 Доступные команды:\n\n' +
+        '🛍 /shop - Открыть магазин\n' +
+        '🤖 /assistant - AI-помощник\n' +
+        '📞 /start - Главное меню\n' +
+        '❓ /help - Эта справка\n\n' +
+        'Используйте кнопки меню для удобной навигации!'
+      );
+    }
+    else if (text === '/stats' && userId.toString() === process.env.ADMIN_ID) {
+      // Admin stats
+      try {
+        const { count: userCount } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+
+        const { count: orderCount } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true });
+
+        await sendMessage(
+          chatId,
+          `📊 Статистика JUV:\n\n` +
+          `👥 Пользователей: ${userCount || 0}\n` +
+          `🛒 Заказов: ${orderCount || 0}`
+        );
+      } catch (error) {
+        await sendMessage(chatId, 'Ошибка при получении статистики.');
+      }
+    }
+    else if (text && !text.startsWith('/')) {
+      // AI Assistant response
+      await logUserAction(userId, username, 'ai_question', { question: text });
+      
+      const aiResponse = await callOpenAI(text);
+      
+      await sendMessage(
+        chatId,
+        `🤖 ${aiResponse}\n\n` +
+        `❓ Есть еще вопросы? Просто напишите их.\n` +
+        `🛍 Чтобы открыть магазин, используйте /shop`
+      );
+
+      await logUserAction(userId, username, 'ai_response', { 
+        question: text, 
+        response: aiResponse.substring(0, 100) + '...' 
+      });
+    }
+
+    // Handle callback queries (button presses)
+    if (update.callback_query) {
+      const callbackQuery = update.callback_query;
+      const chatId = callbackQuery.message.chat.id;
+      const userId = callbackQuery.from.id;
+      const username = callbackQuery.from.username;
+      const data = callbackQuery.data;
+
+      if (data === 'ai_assistant') {
+        await logUserAction(userId, username, 'call_support');
+        
+        await sendMessage(
+          chatId,
+          '🤖 AI-помощник JUV активирован!\n\n' +
+          'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
+        );
+      }
+
+      // Answer callback query
+      await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: callbackQuery.id })
+      });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+} 
