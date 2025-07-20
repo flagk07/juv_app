@@ -280,7 +280,7 @@ export default async function handler(req, res) {
         chatId,
         `🤖 ${aiResponse}\n\n` +
         `❓ Есть еще вопросы? Просто напишите их.\n` +
-        `🛍 Чтобы открыть магазин, используйте /shop`
+        `🛍 Чтобы открыть магазин, используйте /menu`
       );
 
       await logUserAction(userId, username, 'ai_response', { 
@@ -297,7 +297,7 @@ export default async function handler(req, res) {
       const username = callbackQuery.from.username;
       const data = callbackQuery.data;
 
-      if (data === 'help_assistant') {
+      if (data === 'help_assistant' || data === 'ai_assistant') {
         await logUserAction(userId, username, 'call_support');
         
         await sendMessage(
