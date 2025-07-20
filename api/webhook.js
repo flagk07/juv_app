@@ -161,8 +161,8 @@ export default async function handler(req, res) {
         inline_keyboard: [
           [
             {
-              text: '🛍 Открыть магазин',
-              web_app: { url: 'https://juv-app.vercel.app/' }
+              text: '📋 Меню',
+              callback_data: 'main_menu'
             }
           ],
           [
@@ -211,12 +211,60 @@ export default async function handler(req, res) {
         'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
       );
     }
+    else if (text === '/menu') {
+      await logUserAction(userId, username, 'open_menu');
+      
+      const menuKeyboard = {
+        inline_keyboard: [
+          [
+            {
+              text: '🛍 Открыть магазин',
+              web_app: { url: 'https://juv-app.vercel.app/' }
+            }
+          ],
+          [
+            {
+              text: '🤖 AI-помощник',
+              callback_data: 'ai_assistant'
+            },
+            {
+              text: '📞 Поддержка',
+              callback_data: 'support'
+            }
+          ],
+          [
+            {
+              text: '📊 Статистика',
+              callback_data: 'stats'
+            },
+            {
+              text: '❓ Справка',
+              callback_data: 'help'
+            }
+          ],
+          [
+            {
+              text: '🔙 Назад',
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      };
+
+      await sendMessage(
+        chatId,
+        '📋 **Меню JUV**\n\n' +
+        'Выберите нужное действие:',
+        menuKeyboard
+      );
+    }
     else if (text === '/help') {
       await sendMessage(
         chatId,
         '📋 Доступные команды:\n\n' +
         '🛍 /shop - Открыть магазин\n' +
         '🤖 /assistant - AI-помощник\n' +
+        '📋 /menu - Показать меню\n' +
         '📞 /start - Главное меню\n' +
         '❓ /help - Эта справка\n\n' +
         'Используйте кнопки меню для удобной навигации!'
@@ -270,13 +318,139 @@ export default async function handler(req, res) {
       const username = callbackQuery.from.username;
       const data = callbackQuery.data;
 
-      if (data === 'ai_assistant') {
+      if (data === 'main_menu') {
+        await logUserAction(userId, username, 'open_menu');
+        
+        const menuKeyboard = {
+          inline_keyboard: [
+            [
+              {
+                text: '🛍 Открыть магазин',
+                web_app: { url: 'https://juv-app.vercel.app/' }
+              }
+            ],
+            [
+              {
+                text: '🤖 AI-помощник',
+                callback_data: 'ai_assistant'
+              },
+              {
+                text: '📞 Поддержка',
+                callback_data: 'support'
+              }
+            ],
+            [
+              {
+                text: '📊 Статистика',
+                callback_data: 'stats'
+              },
+              {
+                text: '❓ Справка',
+                callback_data: 'help'
+              }
+            ],
+            [
+              {
+                text: '🔙 Назад',
+                callback_data: 'back_to_start'
+              }
+            ]
+          ]
+        };
+
+        await sendMessage(
+          chatId,
+          '📋 **Меню JUV**\n\n' +
+          'Выберите нужное действие:',
+          menuKeyboard
+        );
+      }
+      else if (data === 'ai_assistant') {
         await logUserAction(userId, username, 'call_support');
         
         await sendMessage(
           chatId,
           '🤖 AI-помощник JUV активирован!\n\n' +
           'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
+        );
+      }
+      else if (data === 'support') {
+        await logUserAction(userId, username, 'call_support');
+        
+        await sendMessage(
+          chatId,
+          '📞 **Служба поддержки JUV**\n\n' +
+          '💎 Мы работаем: 08:00 - 20:00 (МСК)\n\n' +
+          '📧 Email: support@juv.com\n' +
+          '📱 Телефон: +7 (xxx) xxx-xx-xx\n\n' +
+          '🤖 Или задайте вопрос AI-помощнику!'
+        );
+      }
+      else if (data === 'stats' && userId.toString() === process.env.ADMIN_ID) {
+        try {
+          const { count: userCount } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+
+          const { count: orderCount } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true });
+
+          await sendMessage(
+            chatId,
+            `📊 **Статистика JUV:**\n\n` +
+            `👥 Пользователей: ${userCount || 0}\n` +
+            `🛒 Заказов: ${orderCount || 0}`
+          );
+        } catch (error) {
+          await sendMessage(chatId, 'Ошибка при получении статистики.');
+        }
+      }
+      else if (data === 'stats' && userId.toString() !== process.env.ADMIN_ID) {
+        await sendMessage(chatId, '❌ Статистика доступна только администратору.');
+      }
+      else if (data === 'help') {
+        await sendMessage(
+          chatId,
+          '📋 **Справка JUV**\n\n' +
+          '**Доступные команды:**\n' +
+          '🛍 /shop - Открыть магазин\n' +
+          '🤖 /assistant - AI-помощник\n' +
+          '📋 /menu - Показать меню\n' +
+          '📞 /start - Главное меню\n' +
+          '❓ /help - Эта справка\n\n' +
+          '**Как пользоваться:**\n' +
+          '• Используйте кнопки для навигации\n' +
+          '• Задавайте вопросы AI-помощнику\n' +
+          '• Открывайте магазин для покупок\n\n' +
+          '💎 Добро пожаловать в мир JUV!'
+        );
+      }
+      else if (data === 'back_to_start') {
+        const firstName = callbackQuery.from.first_name || 'Друг';
+        const mainMenu = {
+          inline_keyboard: [
+            [
+              {
+                text: '📋 Меню',
+                callback_data: 'main_menu'
+              }
+            ],
+            [
+              {
+                text: '🤖 AI-помощник',
+                callback_data: 'ai_assistant'
+              }
+            ]
+          ]
+        };
+
+        await sendMessage(
+          chatId,
+          `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
+          `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
+          `Выберите действие:`,
+          mainMenu
         );
       }
 
