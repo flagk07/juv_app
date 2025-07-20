@@ -104,7 +104,8 @@ async function ensureUser(telegramId, username) {
 
 // Send message to Telegram
 async function sendMessage(chatId, text, replyMarkup = null) {
-  const url = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
+  const botToken = process.env.BOT_TOKEN || '7726909438:AAFzQxlxSr3S1wa1aIsgmg4nZm3-jQtWihQ';
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   const payload = {
     chat_id: chatId,
@@ -116,6 +117,8 @@ async function sendMessage(chatId, text, replyMarkup = null) {
     payload.reply_markup = replyMarkup;
   }
 
+  console.log('📤 Sending message:', { chatId, text: text.substring(0, 50) + '...', replyMarkup: !!replyMarkup });
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -123,9 +126,11 @@ async function sendMessage(chatId, text, replyMarkup = null) {
       body: JSON.stringify(payload)
     });
 
-    return await response.json();
+    const result = await response.json();
+    console.log('📤 Message result:', result);
+    return result;
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error('❌ Error sending message:', error);
     return null;
   }
 }
