@@ -1,13 +1,19 @@
 {
   "version": 2,
   "name": "juv-webapp",
+  "buildCommand": "cd webapp && npm install && npm run build",
+  "outputDirectory": "webapp/.next",
+  "installCommand": "cd webapp && npm install",
   "builds": [
     {
-      "src": "webapp/next.config.js",
+      "src": "webapp/package.json",
       "use": "@vercel/next"
     }
   ],
   "routes": [
+    {
+      "handle": "filesystem"
+    },
     {
       "src": "/(.*)",
       "dest": "webapp/$1"
@@ -15,13 +21,6 @@
   ],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "NEXT_PUBLIC_WEBAPP_URL": "@webapp_url"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key"
-    }
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key"
   }
 } 
