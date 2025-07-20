@@ -9,6 +9,9 @@ const bot = new Bot(process.env.BOT_TOKEN);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// WebApp URL
+const WEBAPP_URL = process.env.WEBAPP_URL || "https://juv-app.vercel.app/";
+
 // Session data
 bot.use(session({ initial: () => ({ awaitingAIQuestion: false }) }));
 
@@ -69,7 +72,7 @@ async function ensureUser(ctx) {
 
 // Main menu
 const mainMenu = new Menu("main-menu")
-  .webApp("🛍 Открыть магазин", process.env.WEBAPP_URL || "https://your-webapp-url.vercel.app")
+  .webApp("🛍 Открыть магазин", WEBAPP_URL)
   .row()
   .text("🤖 AI-помощник", async (ctx) => {
     await logUserAction(ctx.from.id, ctx.from.username, 'call_support');
@@ -116,7 +119,7 @@ bot.command("shop", async (ctx) => {
         inline_keyboard: [[
           {
             text: "Открыть магазин",
-            web_app: { url: process.env.WEBAPP_URL || "https://your-webapp-url.vercel.app" }
+            web_app: { url: WEBAPP_URL }
           }
         ]]
       }
@@ -286,5 +289,5 @@ bot.command("stats", async (ctx) => {
 bot.start().then(() => {
   console.log('🚀 JUV Telegram Bot is running!');
   console.log(`📱 Bot username: @${bot.botInfo.username}`);
-  console.log(`🌐 WebApp URL: ${process.env.WEBAPP_URL || 'Not set'}`);
+  console.log(`🌐 WebApp URL: ${WEBAPP_URL}`);
 }).catch(console.error); 
