@@ -1,9 +1,6 @@
 {
   "version": 2,
   "name": "juv-webapp",
-  "buildCommand": "cd webapp && npm install && npm run build",
-  "outputDirectory": "webapp/.next",
-  "installCommand": "cd webapp && npm install",
   "builds": [
     {
       "src": "webapp/package.json",
@@ -11,9 +8,6 @@
     }
   ],
   "routes": [
-    {
-      "handle": "filesystem"
-    },
     {
       "src": "/(.*)",
       "dest": "webapp/$1"
