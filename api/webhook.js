@@ -312,24 +312,74 @@ export default async function handler(req, res) {
           'Задайте ваш вопрос:'
         );
       }
-      else if (data === 'stats' && userId.toString() === process.env.ADMIN_ID) {
-        try {
-          const { count: userCount } = await supabase
-            .from('users')
-            .select('*', { count: 'exact', head: true });
+      else if (data === 'stats') {
+        const adminId = process.env.ADMIN_ID || '195830791';
+        
+        if (userId.toString() === adminId) {
+          try {
+            // Получаем количество пользователей
+            const usersResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users?select=*`,
+              {
+                headers: {
+                  'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            const users = usersResponse.ok ? await usersResponse.json() : [];
+            
+            // Получаем количество заказов
+            const ordersResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders?select=*`,
+              {
+                headers: {
+                  'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            const orders = ordersResponse.ok ? await ordersResponse.json() : [];
+            
+            // Получаем количество логов за последний день
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const logsResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/logs?select=*&created_at=gte.${yesterday.toISOString()}`,
+              {
+                headers: {
+                  'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            
+            const logs = logsResponse.ok ? await logsResponse.json() : [];
 
-          const { count: orderCount } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true });
-
-          await sendMessage(
-            chatId,
-            `📊 **Статистика JUV:**\n\n` +
-            `👥 Пользователей: ${userCount || 0}\n` +
-            `🛒 Заказов: ${orderCount || 0}`
-          );
-        } catch (error) {
-          await sendMessage(chatId, 'Ошибка при получении статистики.');
+            await sendMessage(
+              chatId,
+              `📊 **Статистика JUV:**\n\n` +
+              `👥 Пользователей: ${users.length || 0}\n` +
+              `🛒 Заказов: ${orders.length || 0}\n` +
+              `📋 Активность (24ч): ${logs.length || 0}\n\n` +
+              `🔄 Обновлено: ${new Date().toLocaleString('ru-RU')}`
+            );
+          } catch (error) {
+            console.error('Stats error:', error);
+            await sendMessage(
+              chatId, 
+              `❌ Ошибка при получении статистики.\n\n` +
+              `Debug: Admin ID: ${adminId}, User ID: ${userId}`
+            );
+          }
+        } else {
+          await sendMessage(chatId, '❌ Статистика доступна только администратору.');
         }
       }
       else if (data === 'info') {
