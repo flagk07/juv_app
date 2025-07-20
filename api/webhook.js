@@ -221,7 +221,8 @@ export default async function handler(req, res) {
       };
 
       // Добавить кнопку статистики только для админа
-      if (userId.toString() === process.env.ADMIN_ID) {
+      const adminId = process.env.ADMIN_ID || '195830791';
+      if (userId.toString() === adminId) {
         menuKeyboard.inline_keyboard.splice(2, 0, [
           {
             text: '📊 Статистика',
@@ -249,25 +250,30 @@ export default async function handler(req, res) {
         'Используйте кнопки меню для удобной навигации!'
       );
     }
-    else if (text === '/stats' && userId.toString() === process.env.ADMIN_ID) {
-      // Admin stats
-      try {
-        const { count: userCount } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
+        else if (text === '/stats') {
+      const adminId = process.env.ADMIN_ID || '195830791';
+      if (userId.toString() === adminId) {
+        // Admin stats
+        try {
+          const { count: userCount } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
 
-        const { count: orderCount } = await supabase
-          .from('orders')
-          .select('*', { count: 'exact', head: true });
+          const { count: orderCount } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true });
 
-        await sendMessage(
-          chatId,
-          `📊 Статистика JUV:\n\n` +
-          `👥 Пользователей: ${userCount || 0}\n` +
-          `🛒 Заказов: ${orderCount || 0}`
-        );
-      } catch (error) {
-        await sendMessage(chatId, 'Ошибка при получении статистики.');
+          await sendMessage(
+            chatId,
+            `📊 Статистика JUV:\n\n` +
+            `👥 Пользователей: ${userCount || 0}\n` +
+            `🛒 Заказов: ${orderCount || 0}`
+          );
+        } catch (error) {
+          await sendMessage(chatId, 'Ошибка при получении статистики.');
+        }
+      } else {
+        await sendMessage(chatId, '❌ Статистика доступна только администратору.');
       }
     }
     else if (text && !text.startsWith('/')) {
