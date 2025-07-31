@@ -26,9 +26,35 @@ export default function Home() {
       logUserAction(user.id, user.username, 'open_webapp')
     }
 
+    // Setup menu button handler
+    if (tgApp.isSupported()) {
+      console.log('🔧 Setting up menu button...');
+      // Show menu button
+      tgApp.showMainButton('Меню', () => {
+        console.log('📱 Menu button clicked!');
+        // Send data to bot to show menu
+        const menuData = {
+          action: 'show_menu',
+          user_id: user?.id
+        };
+        console.log('📤 Sending menu data:', menuData);
+        tgApp.sendData(JSON.stringify(menuData));
+      });
+      console.log('✅ Menu button setup complete');
+    } else {
+      console.log('❌ Telegram WebApp not supported');
+    }
+
     // Load products and cart
     loadProducts()
     loadCart()
+
+    // Cleanup function
+    return () => {
+      if (tgApp.isSupported()) {
+        tgApp.hideMainButton()
+      }
+    }
   }, [])
 
   const loadProducts = async () => {

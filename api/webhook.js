@@ -104,7 +104,7 @@ async function ensureUser(telegramId, username) {
 
 // Send message to Telegram
 async function sendMessage(chatId, text, replyMarkup = null) {
-  const botToken = process.env.BOT_TOKEN || '7726909438:AAFzQxlxSr3S1wa1aIsgmg4nZm3-jQtWihQ';
+  const botToken = process.env.BOT_TOKEN || '7726909438:AAEzSNjZ1uNDRlQAioroXnLQ-DIlJwmmYus';
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   const payload = {
@@ -424,6 +424,65 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callback_query_id: callbackQuery.id })
       });
+    }
+
+    // Handle WebApp data
+    if (update.message?.web_app_data) {
+      console.log('📱 WebApp data received:', update.message.web_app_data);
+      
+      try {
+        const data = JSON.parse(update.message.web_app_data.data);
+        const chatId = update.message.chat.id;
+        const userId = update.message.from.id;
+        const username = update.message.from.username;
+        
+        if (data.action === 'show_menu') {
+          await logUserAction(userId, username, 'webapp_menu_request');
+          
+          const menuKeyboard = {
+            inline_keyboard: [
+              [
+                {
+                  text: '🛍 Магазин',
+                  web_app: { url: 'https://juv-app.vercel.app/' }
+                }
+              ],
+              [
+                {
+                  text: '🤖 Помощь',
+                  callback_data: 'help_assistant'
+                }
+              ],
+              [
+                {
+                  text: '❓ Справка',
+                  callback_data: 'info'
+                }
+              ]
+            ]
+          };
+
+          // Add stats button for admin
+          const adminId = process.env.ADMIN_ID || '195830791';
+          if (userId.toString() === adminId) {
+            menuKeyboard.inline_keyboard.splice(2, 0, [
+              {
+                text: '📊 Статистика',
+                callback_data: 'stats'
+              }
+            ]);
+          }
+
+          await sendMessage(
+            chatId,
+            '📋 **Меню JUV**\n\n' +
+            'Выберите нужное действие:',
+            menuKeyboard
+          );
+        }
+      } catch (error) {
+        console.error('Error handling WebApp data:', error);
+      }
     }
 
     return res.status(200).json({ ok: true });
