@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const { Bot, session, GrammyError, HttpError } = require('grammy');
-const { Menu } = require('@grammyjs/menu');
 const OpenAI = require('openai');
 
 // Debug: Check environment variables
@@ -46,54 +45,57 @@ async function ensureUser(ctx) {
 // Check if user is admin
 function isAdmin(userId) {
   const adminId = process.env.ADMIN_ID || '195830791';
-  return userId.toString() === adminId;
+  const isAdminUser = userId && userId.toString() === adminId;
+  console.log(`🔐 Admin check: User ID ${userId}, Admin ID ${adminId}, Is Admin: ${isAdminUser}`);
+  return isAdminUser;
 }
 
-// Create menu based on user role
-function createMenu(userId) {
-  const menu = new Menu("main-menu")
-    .webApp("🛍 Открыть магазин", WEBAPP_URL)
-    .row()
-    .text("🤖 AI-помощник", async (ctx) => {
-      await logUserAction(ctx.from.id, ctx.from.username, 'call_support');
-      
-      // Очищаем историю диалога и активируем AI-помощника
-      ctx.session.awaitingAIQuestion = true;
-      ctx.session.aiConversationHistory = [];
-      
-      await ctx.reply(
-        "👋 Привет! Я AI-помощник JUV.\n\n" +
-        "Я могу ответить на вопросы о:\n" +
-        "• Ювелирных изделиях и их характеристиках\n" +
-        "• Уходе за украшениями\n" +
-        "• Выборе размера\n" +
-        "• Камнях и металлах\n" +
-        "• Подборе украшений\n\n" +
-        "💡 Задайте ваш вопрос:"
-      );
-    });
+// Create inline keyboard based on user role
+function createInlineKeyboard(userId) {
+  console.log(`📋 Creating keyboard for user ID: ${userId}`);
+  
+  const keyboard = [
+    [
+      {
+        text: "🛍 Открыть магазин",
+        web_app: { url: WEBAPP_URL }
+      }
+    ],
+    [
+      {
+        text: "🤖 AI-помощник",
+        callback_data: "ai_assistant"
+      }
+    ]
+  ];
 
   // Add admin panel button only for admin
   if (isAdmin(userId)) {
-    menu.row().webApp("⚙️ Админ панель", ADMIN_PANEL_URL);
+    console.log(`⚙️ Adding admin panel button for user ${userId}`);
+    keyboard.push([
+      {
+        text: "⚙️ Админ панель",
+        web_app: { url: ADMIN_PANEL_URL }
+      }
+    ]);
+  } else {
+    console.log(`❌ User ${userId} is not admin, skipping admin panel button`);
   }
 
-  return menu;
+  return {
+    inline_keyboard: keyboard
+  };
 }
 
-bot.use((ctx, next) => {
-  // Create dynamic menu based on user role
-  const menu = createMenu(ctx.from?.id);
-  ctx.api.setMyCommands([
-    { command: "start", description: "Запустить бота" },
-    { command: "menu", description: "Показать меню" },
-    { command: "shop", description: "Открыть магазин" },
-    { command: "assistant", description: "AI-помощник" },
-    { command: "help", description: "Помощь" },
-    { command: "stop", description: "Остановить AI-диалог" }
-  ]);
-  return next();
-});
+// Set up bot commands (only basic commands, no admin commands in menu)
+bot.api.setMyCommands([
+  { command: "start", description: "Запустить бота" },
+  { command: "menu", description: "Показать меню" },
+  { command: "shop", description: "Открыть магазин" },
+  { command: "assistant", description: "AI-помощник" },
+  { command: "help", description: "Помощь" },
+  { command: "stop", description: "Остановить AI-диалог" }
+]);
 
 // Start command
 bot.command("start", async (ctx) => {
@@ -101,13 +103,13 @@ bot.command("start", async (ctx) => {
   await logUserAction(ctx.from.id, ctx.from.username, 'start_bot');
   
   const firstName = ctx.from.first_name || 'Друг';
-  const menu = createMenu(ctx.from.id);
+  const keyboard = createInlineKeyboard(ctx.from.id);
   
   await ctx.reply(
     `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
     `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
     `Выберите действие:`,
-    { reply_markup: menu }
+    { reply_markup: keyboard }
   );
 });
 
@@ -117,13 +119,13 @@ bot.command("menu", async (ctx) => {
   await logUserAction(ctx.from.id, ctx.from.username, 'menu_command');
   
   const firstName = ctx.from.first_name || 'Друг';
-  const menu = createMenu(ctx.from.id);
+  const keyboard = createInlineKeyboard(ctx.from.id);
   
   await ctx.reply(
     `📋 Меню JUV, ${firstName}!\n\n` +
     `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
     `Выберите действие:`,
-    { reply_markup: menu }
+    { reply_markup: keyboard }
   );
 });
 
@@ -159,7 +161,7 @@ bot.command("assistant", async (ctx) => {
   await ctx.reply(
     "🤖 AI-помощник JUV активирован!\n\n" +
     "Я эксперт по ювелирным изделиям. Задайте ваш вопрос:\n\n" +
-    "💡 Вы можете задавать вопросы один за другим.\n" +
+    "💬 Вы можете задавать вопросы один за другим.\n" +
     "❌ Чтобы завершить диалог, напишите /stop"
   );
 });
@@ -219,13 +221,53 @@ bot.command("stop", async (ctx) => {
     await ctx.reply(
       "✅ Диалог с AI-помощником завершен.\n\n" +
       "Выберите действие:",
-      { reply_markup: createMenu(ctx.from.id) }
+      { reply_markup: createInlineKeyboard(ctx.from.id) }
     );
   } else {
     await ctx.reply(
       "🤖 AI-помощник не активен.\n\n" +
       "Используйте /assistant для начала диалога."
     );
+  }
+});
+
+// Handle callback queries (inline keyboard buttons)
+bot.on("callback_query", async (ctx) => {
+  console.log('🔍 Callback query received:', ctx.callbackQuery.data);
+  
+  try {
+    const callbackData = ctx.callbackQuery.data;
+    
+    switch (callbackData) {
+      case 'ai_assistant':
+        await logUserAction(ctx.from.id, ctx.from.username, 'callback_ai_assistant');
+        
+        ctx.session.awaitingAIQuestion = true;
+        ctx.session.aiConversationHistory = [];
+        
+        await ctx.reply(
+          "👋 Привет! Я AI-помощник JUV.\n\n" +
+          "Я могу ответить на вопросы о:\n" +
+          "• Ювелирных изделиях и их характеристиках\n" +
+          "• Уходе за украшениями\n" +
+          "• Выборе размера\n" +
+          "• Камнях и металлах\n" +
+          "• Подборе украшений\n\n" +
+          "💡 Задайте ваш вопрос:"
+        );
+        break;
+        
+      default:
+        console.log('❌ Unknown callback data:', callbackData);
+        await ctx.reply("❌ Неизвестная команда");
+    }
+    
+    // Answer callback query to remove loading state
+    await ctx.answerCallbackQuery();
+    
+  } catch (error) {
+    console.error('❌ Error handling callback query:', error);
+    await ctx.answerCallbackQuery("Произошла ошибка");
   }
 });
 
@@ -310,7 +352,7 @@ bot.on("message:text", async (ctx) => {
 
   } catch (error) {
     console.error('Error generating AI response:', error);
-    
+
     await ctx.reply(
       "😔 Извините, произошла ошибка при обработке вашего вопроса.\n\n" +
       "Попробуйте:\n" +
@@ -320,134 +362,6 @@ bot.on("message:text", async (ctx) => {
     );
 
     await logUserAction(user.id, user.username, 'ai_error', { question, error: error.message });
-  }
-});
-
-// Handle WebApp data
-bot.on("message:web_app_data", async (ctx) => {
-  console.log('📱 WebApp data received:', ctx.message.web_app_data);
-  try {
-    const data = JSON.parse(ctx.message.web_app_data.data);
-    console.log('📋 Parsed WebApp data:', data);
-    
-    if (data.action === 'show_menu') {
-      console.log('🎯 Processing show_menu action for user:', ctx.from.id);
-      await logUserAction(ctx.from.id, ctx.from.username, 'webapp_menu_request');
-      
-      const menuKeyboard = {
-        inline_keyboard: [
-          [
-            {
-              text: '🛍 Магазин',
-              web_app: { url: WEBAPP_URL }
-            }
-          ],
-          [
-            {
-              text: '🤖 Помощь',
-              callback_data: 'help_assistant'
-            }
-          ],
-          [
-            {
-              text: '❓ Справка',
-              callback_data: 'info'
-            }
-          ]
-        ]
-      };
-
-      // Add stats button for admin
-      const adminId = process.env.ADMIN_ID || '195830791';
-      if (ctx.from.id.toString() === adminId) {
-        menuKeyboard.inline_keyboard.splice(2, 0, [
-          {
-            text: '📊 Статистика',
-            callback_data: 'stats'
-          }
-        ]);
-      }
-
-      console.log('📋 Sending menu keyboard:', menuKeyboard);
-      await ctx.reply(
-        '📋 **Меню JUV**\n\n' +
-        'Выберите нужное действие:',
-        { 
-          reply_markup: menuKeyboard,
-          parse_mode: 'HTML'
-        }
-      );
-      console.log('✅ Menu sent successfully');
-    } else {
-      console.log('❌ Unknown action:', data.action);
-    }
-  } catch (error) {
-    console.error('❌ Error handling WebApp data:', error);
-  }
-});
-
-// Handle callback queries (menu buttons)
-bot.on("callback_query", async (ctx) => {
-  console.log('🔍 Callback query received:', ctx.callbackQuery.data);
-  
-  try {
-    const callbackData = ctx.callbackQuery.data;
-    
-    switch (callbackData) {
-      case 'help_assistant':
-        await logUserAction(ctx.from.id, ctx.from.username, 'menu_help_assistant');
-        
-        ctx.session.awaitingAIQuestion = true;
-        await ctx.reply(
-          "👋 Привет! Я AI-помощник JUV.\n\n" +
-          "Я могу ответить на вопросы о:\n" +
-          "• Ювелирных изделиях и их характеристиках\n" +
-          "• Уходе за украшениями\n" +
-          "• Выборе размера\n" +
-          "• Камнях и металлах\n" +
-          "• Подборе украшений\n\n" +
-          "Задайте ваш вопрос:"
-        );
-        break;
-        
-      case 'info':
-        await logUserAction(ctx.from.id, ctx.from.username, 'menu_info');
-        
-        await ctx.reply(
-          "ℹ️ **Информация о JUV**\n\n" +
-          "Мы специализируемся на ювелирных изделиях:\n" +
-          "• Золотые и серебряные украшения\n" +
-          "• Драгоценные камни\n" +
-          "• Индивидуальный подбор\n" +
-          "• Консультации экспертов\n\n" +
-          "🛍 Откройте наш магазин для просмотра товаров!"
-        );
-        break;
-        
-      case 'stats':
-        if (ctx.from.id.toString() === process.env.ADMIN_ID) {
-          await logUserAction(ctx.from.id, ctx.from.username, 'menu_stats');
-          
-          await ctx.reply(
-            "📊 Статистика временно недоступна\n" +
-            "(Проблемы с подключением к базе данных)"
-          );
-        } else {
-          await ctx.reply("❌ Доступ запрещен");
-        }
-        break;
-        
-      default:
-        console.log('❌ Unknown callback data:', callbackData);
-        await ctx.reply("❌ Неизвестная команда");
-    }
-    
-    // Answer callback query to remove loading state
-    await ctx.answerCallbackQuery();
-    
-  } catch (error) {
-    console.error('❌ Error handling callback query:', error);
-    await ctx.answerCallbackQuery("Произошла ошибка");
   }
 });
 
@@ -464,18 +378,6 @@ bot.catch((err) => {
   } else {
     console.error("Unknown error:", e);
   }
-});
-
-// Admin commands (for admin user only)
-bot.command("stats", async (ctx) => {
-  if (ctx.from.id.toString() !== process.env.ADMIN_ID) {
-    return;
-  }
-
-  await ctx.reply(
-    "📊 Статистика временно недоступна\n" +
-    "(Проблемы с подключением к базе данных)"
-  );
 });
 
 // Start bot

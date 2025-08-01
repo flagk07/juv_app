@@ -8,45 +8,63 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+const navigation = [
+  { name: 'Главная', href: '/admin', icon: '🏠' },
+  { name: 'Заказы', href: '/admin/orders', icon: '📦' },
+  { name: 'Товары', href: '/admin/products', icon: '🛍' },
+  { name: 'Пользователи', href: '/admin/users', icon: '👥' },
+  { name: 'Статистика', href: '/admin/dashboard', icon: '📊' },
+]
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
   const pathname = usePathname();
-
-  const navigation = [
-    { name: 'Дашборд', href: '/admin/dashboard', icon: '📊' },
-    { name: 'Заказы', href: '/admin/orders', icon: '📦' },
-    { name: 'Товары', href: '/admin/products', icon: '🛍️' },
-    { name: 'Пользователи', href: '/admin/users', icon: '👥' },
-  ];
 
   useEffect(() => {
     // Проверка админских прав через Telegram WebApp
     const checkAdminAccess = () => {
       const tg = (window as any).Telegram?.WebApp;
-      if (!tg) {
-        console.log('Telegram WebApp не найден');
-        setIsAuthorized(false);
-        setIsLoading(false);
-        return;
+      if (tg) {
+        const userId = tg.initDataUnsafe?.user?.id;
+        const adminId = process.env.NEXT_PUBLIC_ADMIN_ID || '195830791';
+        
+        if (userId?.toString() === adminId) {
+          console.log('Админ авторизован через Telegram:', userId);
+          setIsAuthorized(true);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      const userId = tg.initDataUnsafe?.user?.id;
-      const adminId = process.env.NEXT_PUBLIC_ADMIN_ID || '195830791';
-      
-      if (userId?.toString() === adminId) {
-        console.log('Админ авторизован:', userId);
-        setIsAuthorized(true);
-      } else {
-        console.log('Доступ запрещен. User ID:', userId, 'Admin ID:', adminId);
-        setIsAuthorized(false);
-      }
+      // Если не авторизован через Telegram, показываем форму входа
+      console.log('Telegram авторизация не удалась, показываем форму входа');
+      setIsAuthorized(false);
       setIsLoading(false);
+      setShowLoginForm(true);
     };
 
     checkAdminAccess();
   }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Простая проверка логина/пароля (в реальном проекте должна быть на сервере)
+    const adminUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin';
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'juv2024';
+    
+    if (loginData.username === adminUsername && loginData.password === adminPassword) {
+      console.log('Админ авторизован через браузер');
+      setIsAuthorized(true);
+      setShowLoginForm(false);
+    } else {
+      alert('Неверный логин или пароль');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -64,17 +82,66 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Доступ запрещен</h1>
-          <p className="text-gray-600 mb-6">
-            У вас нет прав для доступа к админской панели. 
-            Обратитесь к администратору для получения доступа.
-          </p>
-          <Link
-            href="https://t.me/juv_app_bot"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Открыть бота
-          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Админ панель JUV</h1>
+          
+          {showLoginForm ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Логин
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  value={loginData.username}
+                  onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Пароль
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Войти
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-gray-600 mb-6">
+                Для доступа к админской панели требуется авторизация.
+              </p>
+              <button
+                onClick={() => setShowLoginForm(true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Войти в админ панель
+              </button>
+            </div>
+          )}
+          
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-500 mb-2">Или войдите через Telegram:</p>
+            <Link
+              href="https://t.me/juv_app_bot"
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Открыть бота
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -131,12 +198,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">Админ панель</span>
-              <Link
-                href="/"
-                className="text-sm text-blue-600 hover:text-blue-700"
+              <button
+                onClick={() => {
+                  setIsAuthorized(false);
+                  setShowLoginForm(false);
+                }}
+                className="text-sm text-red-600 hover:text-red-700"
               >
-                ← Вернуться на сайт
-              </Link>
+                Выйти
+              </button>
             </div>
           </div>
         </div>
@@ -146,14 +216,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
-
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </div>
   );
 } 
