@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -10,6 +10,8 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
 
   const navigation = [
@@ -18,6 +20,65 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Товары', href: '/admin/products', icon: '🛍️' },
     { name: 'Пользователи', href: '/admin/users', icon: '👥' },
   ];
+
+  useEffect(() => {
+    // Проверка админских прав через Telegram WebApp
+    const checkAdminAccess = () => {
+      const tg = (window as any).Telegram?.WebApp;
+      if (!tg) {
+        console.log('Telegram WebApp не найден');
+        setIsAuthorized(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const userId = tg.initDataUnsafe?.user?.id;
+      const adminId = process.env.NEXT_PUBLIC_ADMIN_ID || '195830791';
+      
+      if (userId?.toString() === adminId) {
+        console.log('Админ авторизован:', userId);
+        setIsAuthorized(true);
+      } else {
+        console.log('Доступ запрещен. User ID:', userId, 'Admin ID:', adminId);
+        setIsAuthorized(false);
+      }
+      setIsLoading(false);
+    };
+
+    checkAdminAccess();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Проверка прав доступа...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Доступ запрещен</h1>
+          <p className="text-gray-600 mb-6">
+            У вас нет прав для доступа к админской панели. 
+            Обратитесь к администратору для получения доступа.
+          </p>
+          <Link
+            href="https://t.me/juv_app_bot"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Открыть бота
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -69,7 +130,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </button>
             
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Админ панель (тестовый режим)</span>
+              <span className="text-sm text-gray-500">Админ панель</span>
               <Link
                 href="/"
                 className="text-sm text-blue-600 hover:text-blue-700"
