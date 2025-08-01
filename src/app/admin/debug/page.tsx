@@ -1,153 +1,224 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export default function DebugPage() {
-  const [localStorageData, setLocalStorageData] = useState<any>(null);
-  const [products, setProducts] = useState([]);
+  const [debugInfo, setDebugInfo] = useState({
+    localStorageAvailable: false,
+    rawData: null,
+    parsedData: null,
+    error: null,
+    timestamp: null
+  });
+
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Проверяем localStorage
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const checkLocalStorage = () => {
       try {
-        const storedProducts = localStorage.getItem('juv_products');
-        console.log('localStorage juv_products:', storedProducts);
-        
-        if (storedProducts) {
-          const parsedProducts = JSON.parse(storedProducts);
-          console.log('Parsed products:', parsedProducts);
-          setProducts(parsedProducts);
-          setLocalStorageData({
-            raw: storedProducts,
-            parsed: parsedProducts,
-            count: parsedProducts.length
-          });
-        } else {
-          setLocalStorageData({
-            raw: null,
-            parsed: null,
-            count: 0
-          });
+        const available = typeof window !== 'undefined' && window.localStorage;
+        const rawData = available ? localStorage.getItem('juv_products') : null;
+        let parsedData = null;
+        let error = null;
+
+        if (rawData) {
+          try {
+            parsedData = JSON.parse(rawData);
+          } catch (parseError) {
+            error = `Ошибка парсинга: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`;
+          }
         }
-      } catch (error) {
-        console.error('Error reading localStorage:', error);
-        // Исправленная обработка ошибок для TypeScript
-        setLocalStorageData({
-          error: error instanceof Error ? error.message : 'Unknown error'
+
+        setDebugInfo({
+          localStorageAvailable: !!available,
+          rawData,
+          parsedData,
+          error,
+          timestamp: new Date().toLocaleString()
         });
+
+        console.log('🔍 Debug info:', {
+          localStorageAvailable: !!available,
+          rawData,
+          parsedData,
+          error
+        });
+      } catch (error) {
+        setDebugInfo(prev => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toLocaleString()
+        }));
       }
     };
 
     checkLocalStorage();
-  }, []);
+  }, [isClient]);
 
   const addTestProduct = () => {
-    const testProduct = {
-      id: Date.now().toString(),
-      name: 'Тестовый товар',
-      description: 'Описание тестового товара',
-      price: 1000,
-      category: 'rings',
-      inStock: true,
-      imageUrl: '',
-      createdAt: new Date().toISOString()
-    };
+    if (!isClient) return;
 
-    const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
-    existingProducts.push(testProduct);
-    localStorage.setItem('juv_products', JSON.stringify(existingProducts));
-    
-    console.log('Added test product:', testProduct);
-    console.log('Updated localStorage:', localStorage.getItem('juv_products'));
-    
-    // Обновляем состояние
-    setProducts(existingProducts);
-    setLocalStorageData({
-      raw: localStorage.getItem('juv_products'),
-      parsed: existingProducts,
-      count: existingProducts.length
-    });
+    try {
+      const testProduct = {
+        id: Date.now().toString(),
+        name: `Тестовый товар ${Date.now()}`,
+        description: 'Это тестовый товар для проверки функциональности',
+        price: Math.floor(Math.random() * 10000) + 1000,
+        imageUrl: 'https://via.placeholder.com/300x200',
+        category: 'rings',
+        inStock: true,
+        createdAt: new Date().toISOString()
+      };
+
+      const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
+      existingProducts.push(testProduct);
+      localStorage.setItem('juv_products', JSON.stringify(existingProducts));
+
+      console.log('✅ Тестовый товар добавлен:', testProduct);
+      
+      // Обновляем отладочную информацию
+      setDebugInfo(prev => ({
+        ...prev,
+        rawData: localStorage.getItem('juv_products'),
+        parsedData: existingProducts,
+        timestamp: new Date().toLocaleString()
+      }));
+
+      alert('Тестовый товар добавлен!');
+    } catch (error) {
+      console.error('❌ Ошибка добавления тестового товара:', error);
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
-  const clearProducts = () => {
-    localStorage.removeItem('juv_products');
-    setProducts([]);
-    setLocalStorageData({
-      raw: null,
-      parsed: null,
-      count: 0
-    });
+  const clearAllProducts = () => {
+    if (!isClient) return;
+
+    if (confirm('Вы уверены, что хотите удалить ВСЕ товары?')) {
+      try {
+        localStorage.removeItem('juv_products');
+        console.log('🗑️ Все товары удалены');
+        
+        setDebugInfo(prev => ({
+          ...prev,
+          rawData: null,
+          parsedData: null,
+          timestamp: new Date().toLocaleString()
+        }));
+
+        alert('Все товары удалены!');
+      } catch (error) {
+        console.error('❌ Ошибка очистки товаров:', error);
+        alert(`Ошибка: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
   };
+
+  if (!isClient) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Отладка</h1>
-        <p className="text-gray-600">Проверка localStorage и товаров</p>
-      </div>
-
-      {/* Кнопки управления */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Действия</h2>
-        <div className="flex space-x-4">
-          <button
-            onClick={addTestProduct}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Добавить тестовый товар
-          </button>
-          <button
-            onClick={clearProducts}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Очистить все товары
-          </button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Отладка</h1>
+          <p className="text-gray-600">Диагностика localStorage и товаров</p>
         </div>
+        <Link
+          href="/admin/products"
+          className="text-blue-600 hover:text-blue-700"
+        >
+          ← Назад к товарам
+        </Link>
       </div>
 
-      {/* Информация о localStorage */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">localStorage</h2>
+      {/* Статус localStorage */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Статус localStorage</h2>
         <div className="space-y-2">
-          <p><strong>Количество товаров:</strong> {localStorageData?.count || 0}</p>
-          <p><strong>Сырые данные:</strong></p>
-          <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-            {localStorageData?.raw || 'null'}
-          </pre>
-          {localStorageData?.error && (
-            <p className="text-red-600"><strong>Ошибка:</strong> {localStorageData.error}</p>
+          <div className="flex items-center">
+            <span className={`w-3 h-3 rounded-full mr-2 ${
+              debugInfo.localStorageAvailable ? 'bg-green-500' : 'bg-red-500'
+            }`}></span>
+            <span className="text-sm">
+              localStorage {debugInfo.localStorageAvailable ? 'доступен' : 'недоступен'}
+            </span>
+          </div>
+          {debugInfo.timestamp && (
+            <p className="text-xs text-gray-500">Последняя проверка: {debugInfo.timestamp}</p>
           )}
         </div>
       </div>
 
-      {/* Список товаров */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Товары ({products.length})</h2>
-        {products.length === 0 ? (
-          <p className="text-gray-600">Товаров нет</p>
-        ) : (
-          <div className="space-y-4">
-            {products.map((product: any) => (
-              <div key={product.id} className="border p-4 rounded">
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="text-sm text-gray-600">{product.description}</p>
-                <p className="text-lg font-bold">{product.price} ₽</p>
-                <p className="text-sm text-gray-500">Категория: {product.category}</p>
-                <p className="text-sm text-gray-500">В наличии: {product.inStock ? 'Да' : 'Нет'}</p>
-                <p className="text-xs text-gray-400">ID: {product.id}</p>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Ошибки */}
+      {debugInfo.error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-semibold">Ошибка:</h3>
+          <p className="text-red-600">{debugInfo.error}</p>
+        </div>
+      )}
+
+      {/* Действия */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Действия</h2>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={addTestProduct}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+          >
+            Добавить тестовый товар
+          </button>
+          <button
+            onClick={clearAllProducts}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Очистить все товары
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Обновить страницу
+          </button>
+        </div>
       </div>
 
-      {/* Консоль */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Консоль браузера</h2>
-        <p className="text-gray-600">
-          Откройте консоль браузера (F12) и посмотрите на логи для отладки
-        </p>
+      {/* Сырые данные */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Сырые данные localStorage</h2>
+        <div className="bg-gray-100 p-4 rounded-md">
+          <pre className="text-xs text-gray-700 whitespace-pre-wrap break-all">
+            {debugInfo.rawData || 'null (пусто)'}
+          </pre>
+        </div>
+      </div>
+
+      {/* Парсенные данные */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Парсенные данные</h2>
+        <div className="bg-gray-100 p-4 rounded-md">
+          <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+            {debugInfo.parsedData ? JSON.stringify(debugInfo.parsedData, null, 2) : 'null (пусто)'}
+          </pre>
+        </div>
+        {debugInfo.parsedData && Array.isArray(debugInfo.parsedData) && (
+          <p className="text-sm text-gray-600 mt-2">
+            Найдено товаров: {debugInfo.parsedData.length}
+          </p>
+        )}
       </div>
     </div>
   );
-} 
+}

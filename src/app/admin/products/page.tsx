@@ -7,6 +7,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [isClient, setIsClient] = useState(false);
   const [debug, setDebug] = useState({
     localStorageAvailable: false,
     localStorageData: null,
@@ -14,6 +15,12 @@ export default function ProductsPage() {
   });
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     // Загружаем товары из localStorage
     const loadProducts = () => {
       try {
@@ -61,14 +68,16 @@ export default function ProductsPage() {
     };
 
     loadProducts();
-  }, []);
+  }, [isClient]);
 
   const toggleStock = (productId: string) => {
+    if (!isClient) return;
+    
     try {
       console.log('🔄 Переключение статуса товара:', productId);
       
       // Обновляем статус товара в localStorage
-      const updatedProducts = products.map(product => 
+      const updatedProducts = products.map((product: any) => 
         product.id === productId 
           ? { ...product, inStock: !product.inStock }
           : product
@@ -83,11 +92,13 @@ export default function ProductsPage() {
   };
 
   const deleteProduct = (productId: string) => {
+    if (!isClient) return;
+    
     if (confirm('Вы уверены, что хотите удалить этот товар?')) {
       try {
         console.log('🗑️ Удаление товара:', productId);
         
-        const updatedProducts = products.filter(product => product.id !== productId);
+        const updatedProducts = products.filter((product: any) => product.id !== productId);
         setProducts(updatedProducts);
         localStorage.setItem('juv_products', JSON.stringify(updatedProducts));
         console.log('✅ Товар удален');
@@ -97,7 +108,7 @@ export default function ProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter((product: any) => {
     if (filter === 'active' && !product.inStock) return false;
     if (filter === 'inactive' && product.inStock) return false;
     return true;
@@ -159,7 +170,7 @@ export default function ProductsPage() {
               filter === 'active' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Активные ({products.filter(p => p.inStock).length})
+            Активные ({products.filter((p: any) => p.inStock).length})
           </button>
           <button
             onClick={() => setFilter('inactive')}
@@ -167,7 +178,7 @@ export default function ProductsPage() {
               filter === 'inactive' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Неактивные ({products.filter(p => !p.inStock).length})
+            Неактивные ({products.filter((p: any) => !p.inStock).length})
           </button>
         </div>
       </div>
@@ -274,4 +285,4 @@ export default function ProductsPage() {
       </div>
     </div>
   );
-} 
+}

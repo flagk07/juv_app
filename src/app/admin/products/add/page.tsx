@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -14,6 +14,7 @@ const categories = [
 export default function AddProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -23,31 +24,43 @@ export default function AddProductPage() {
     inStock: true
   });
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Проверяем доступность localStorage
+      if (!isClient || typeof window === 'undefined' || !window.localStorage) {
+        throw new Error('localStorage недоступен');
+      }
+
       // Создаем новый товар
       const newProduct = {
-        id: Date.now().toString(), // Простой ID
+        id: Date.now().toString(),
         ...formData,
         price: parseFloat(formData.price),
         createdAt: new Date().toISOString()
       };
 
-      // Сохраняем в localStorage для демонстрации
+      // Сохраняем в localStorage
       const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
       existingProducts.push(newProduct);
       localStorage.setItem('juv_products', JSON.stringify(existingProducts));
 
-      console.log('Товар создан:', newProduct);
+      console.log('✅ Товар создан:', newProduct);
+      console.log('✅ Всего товаров:', existingProducts.length);
+      
+      alert('Товар успешно добавлен!');
       
       // Перенаправление на список товаров
       router.push('/admin/products');
     } catch (error) {
-      console.error('Ошибка при создании товара:', error);
-      alert('Ошибка при создании товара');
+      console.error('❌ Ошибка при создании товара:', error);
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     } finally {
       setLoading(false);
     }
@@ -62,6 +75,14 @@ export default function AddProductPage() {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  if (!isClient) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
