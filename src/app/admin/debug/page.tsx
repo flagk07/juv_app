@@ -31,6 +31,7 @@ export default function DebugPage() {
         }
       } catch (error) {
         console.error('Error reading localStorage:', error);
+        // Исправленная обработка ошибок для TypeScript
         setLocalStorageData({
           error: error instanceof Error ? error.message : 'Unknown error'
         });
