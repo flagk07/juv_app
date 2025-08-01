@@ -19,6 +19,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // WebApp URL
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://juv-app.vercel.app/";
+const ADMIN_PANEL_URL = process.env.WEBAPP_URL ? process.env.WEBAPP_URL + "admin" : "https://juv-app.vercel.app/admin";
 
 // Session data
 bot.use(session({ 
@@ -42,30 +43,57 @@ async function ensureUser(ctx) {
   return { id: user.id, username: user.username };
 }
 
-// Main menu
-const mainMenu = new Menu("main-menu")
-  .webApp("🛍 Открыть магазин", WEBAPP_URL)
-  .row()
-  .text("🤖 AI-помощник", async (ctx) => {
-    await logUserAction(ctx.from.id, ctx.from.username, 'call_support');
-    
-    // Очищаем историю диалога и активируем AI-помощника
-    ctx.session.awaitingAIQuestion = true;
-    ctx.session.aiConversationHistory = [];
-    
-    await ctx.reply(
-      "👋 Привет! Я AI-помощник JUV.\n\n" +
-      "Я могу ответить на вопросы о:\n" +
-      "• Ювелирных изделиях и их характеристиках\n" +
-      "• Уходе за украшениями\n" +
-      "• Выборе размера\n" +
-      "• Камнях и металлах\n" +
-      "• Подборе украшений\n\n" +
-      "💡 Задайте ваш вопрос:"
-    );
-  });
+// Check if user is admin
+function isAdmin(userId) {
+  const adminId = process.env.ADMIN_ID || '195830791';
+  return userId.toString() === adminId;
+}
 
-bot.use(mainMenu);
+// Create menu based on user role
+function createMenu(userId) {
+  const menu = new Menu("main-menu")
+    .webApp("🛍 Открыть магазин", WEBAPP_URL)
+    .row()
+    .text("🤖 AI-помощник", async (ctx) => {
+      await logUserAction(ctx.from.id, ctx.from.username, 'call_support');
+      
+      // Очищаем историю диалога и активируем AI-помощника
+      ctx.session.awaitingAIQuestion = true;
+      ctx.session.aiConversationHistory = [];
+      
+      await ctx.reply(
+        "👋 Привет! Я AI-помощник JUV.\n\n" +
+        "Я могу ответить на вопросы о:\n" +
+        "• Ювелирных изделиях и их характеристиках\n" +
+        "• Уходе за украшениями\n" +
+        "• Выборе размера\n" +
+        "• Камнях и металлах\n" +
+        "• Подборе украшений\n\n" +
+        "💡 Задайте ваш вопрос:"
+      );
+    });
+
+  // Add admin panel button only for admin
+  if (isAdmin(userId)) {
+    menu.row().webApp("⚙️ Админ панель", ADMIN_PANEL_URL);
+  }
+
+  return menu;
+}
+
+bot.use((ctx, next) => {
+  // Create dynamic menu based on user role
+  const menu = createMenu(ctx.from?.id);
+  ctx.api.setMyCommands([
+    { command: "start", description: "Запустить бота" },
+    { command: "menu", description: "Показать меню" },
+    { command: "shop", description: "Открыть магазин" },
+    { command: "assistant", description: "AI-помощник" },
+    { command: "help", description: "Помощь" },
+    { command: "stop", description: "Остановить AI-диалог" }
+  ]);
+  return next();
+});
 
 // Start command
 bot.command("start", async (ctx) => {
@@ -73,12 +101,13 @@ bot.command("start", async (ctx) => {
   await logUserAction(ctx.from.id, ctx.from.username, 'start_bot');
   
   const firstName = ctx.from.first_name || 'Друг';
+  const menu = createMenu(ctx.from.id);
   
   await ctx.reply(
     `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
     `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
     `Выберите действие:`,
-    { reply_markup: mainMenu }
+    { reply_markup: menu }
   );
 });
 
@@ -88,12 +117,13 @@ bot.command("menu", async (ctx) => {
   await logUserAction(ctx.from.id, ctx.from.username, 'menu_command');
   
   const firstName = ctx.from.first_name || 'Друг';
+  const menu = createMenu(ctx.from.id);
   
   await ctx.reply(
     `📋 Меню JUV, ${firstName}!\n\n` +
     `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
     `Выберите действие:`,
-    { reply_markup: mainMenu }
+    { reply_markup: menu }
   );
 });
 
@@ -136,15 +166,46 @@ bot.command("assistant", async (ctx) => {
 
 // Help command
 bot.command("help", async (ctx) => {
-  await ctx.reply(
-    "📋 Доступные команды:\n\n" +
+  let helpText = "📋 Доступные команды:\n\n" +
     "🛍 /shop - Открыть магазин\n" +
     "🤖 /assistant - AI-помощник\n" +
     "📞 /start - Главное меню\n" +
     "📋 /menu - Показать меню\n" +
     "❌ /stop - Завершить диалог с AI\n" +
-    "❓ /help - Эта справка\n\n" +
-    "Используйте кнопки меню для удобной навигации!"
+    "❓ /help - Эта справка\n\n";
+
+  // Добавляем админскую команду только для админа
+  if (isAdmin(ctx.from.id)) {
+    helpText += "⚙️ /admin - Открыть админ панель\n\n";
+  }
+
+  helpText += "Используйте кнопки меню для удобной навигации!";
+
+  await ctx.reply(helpText);
+});
+
+// Admin command - только для админа
+bot.command("admin", async (ctx) => {
+  if (!isAdmin(ctx.from.id)) {
+    await ctx.reply("❌ У вас нет прав для доступа к админ панели.");
+    return;
+  }
+
+  await logUserAction(ctx.from.id, ctx.from.username, 'open_admin_panel');
+  
+  await ctx.reply(
+    "⚙️ Админ панель JUV\n\n" +
+    "Управление заказами, товарами и пользователями:",
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "Открыть админ панель",
+            web_app: { url: ADMIN_PANEL_URL }
+          }
+        ]]
+      }
+    }
   );
 });
 
@@ -158,7 +219,7 @@ bot.command("stop", async (ctx) => {
     await ctx.reply(
       "✅ Диалог с AI-помощником завершен.\n\n" +
       "Выберите действие:",
-      { reply_markup: mainMenu }
+      { reply_markup: createMenu(ctx.from.id) }
     );
   } else {
     await ctx.reply(
