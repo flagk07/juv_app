@@ -53,7 +53,7 @@ export default function ProductsPage() {
         console.error('❌ Ошибка загрузки товаров:', error);
         setDebug(prev => ({ 
           ...prev, 
-          error: error.message 
+          error: error instanceof Error ? error.message : 'Unknown error'
         }));
       } finally {
         setLoading(false);

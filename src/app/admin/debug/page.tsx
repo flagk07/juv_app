@@ -32,7 +32,7 @@ export default function DebugPage() {
       } catch (error) {
         console.error('Error reading localStorage:', error);
         setLocalStorageData({
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     };
