@@ -7,40 +7,93 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [debug, setDebug] = useState({
+    localStorageAvailable: false,
+    localStorageData: null,
+    error: null
+  });
 
   useEffect(() => {
     // Загружаем товары из localStorage
     const loadProducts = () => {
       try {
-        const storedProducts = localStorage.getItem('juv_products');
-        if (storedProducts) {
-          setProducts(JSON.parse(storedProducts));
+        console.log('🔍 Загрузка товаров из localStorage...');
+        
+        // Проверяем доступность localStorage
+        if (typeof window !== 'undefined' && window.localStorage) {
+          setDebug(prev => ({ ...prev, localStorageAvailable: true }));
+          
+          const storedProducts = localStorage.getItem('juv_products');
+          console.log('📦 localStorage juv_products:', storedProducts);
+          
+          if (storedProducts) {
+            const parsedProducts = JSON.parse(storedProducts);
+            console.log('✅ Парсинг товаров:', parsedProducts);
+            setProducts(parsedProducts);
+            setDebug(prev => ({ 
+              ...prev, 
+              localStorageData: storedProducts 
+            }));
+          } else {
+            console.log('📭 localStorage пуст, товаров нет');
+            setProducts([]);
+            setDebug(prev => ({ 
+              ...prev, 
+              localStorageData: null 
+            }));
+          }
+        } else {
+          console.error('❌ localStorage недоступен');
+          setDebug(prev => ({ 
+            ...prev, 
+            error: 'localStorage недоступен' 
+          }));
         }
       } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
+        console.error('❌ Ошибка загрузки товаров:', error);
+        setDebug(prev => ({ 
+          ...prev, 
+          error: error.message 
+        }));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadProducts();
   }, []);
 
   const toggleStock = (productId: string) => {
-    // Обновляем статус товара в localStorage
-    const updatedProducts = products.map(product => 
-      product.id === productId 
-        ? { ...product, inStock: !product.inStock }
-        : product
-    );
-    setProducts(updatedProducts);
-    localStorage.setItem('juv_products', JSON.stringify(updatedProducts));
+    try {
+      console.log('🔄 Переключение статуса товара:', productId);
+      
+      // Обновляем статус товара в localStorage
+      const updatedProducts = products.map(product => 
+        product.id === productId 
+          ? { ...product, inStock: !product.inStock }
+          : product
+      );
+      
+      setProducts(updatedProducts);
+      localStorage.setItem('juv_products', JSON.stringify(updatedProducts));
+      console.log('✅ Статус товара обновлен');
+    } catch (error) {
+      console.error('❌ Ошибка обновления статуса:', error);
+    }
   };
 
   const deleteProduct = (productId: string) => {
     if (confirm('Вы уверены, что хотите удалить этот товар?')) {
-      const updatedProducts = products.filter(product => product.id !== productId);
-      setProducts(updatedProducts);
-      localStorage.setItem('juv_products', JSON.stringify(updatedProducts));
+      try {
+        console.log('🗑️ Удаление товара:', productId);
+        
+        const updatedProducts = products.filter(product => product.id !== productId);
+        setProducts(updatedProducts);
+        localStorage.setItem('juv_products', JSON.stringify(updatedProducts));
+        console.log('✅ Товар удален');
+      } catch (error) {
+        console.error('❌ Ошибка удаления товара:', error);
+      }
     }
   };
 
@@ -65,13 +118,29 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
           <p className="text-gray-600">Управление каталогом товаров</p>
         </div>
-        <Link
-          href="/admin/products/add"
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          + Добавить товар
-        </Link>
+        <div className="flex space-x-2">
+          <Link
+            href="/admin/debug"
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            Отладка
+          </Link>
+          <Link
+            href="/admin/products/add"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            + Добавить товар
+          </Link>
+        </div>
       </div>
+
+      {/* Отладочная информация */}
+      {debug.error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-semibold">Ошибка загрузки товаров:</h3>
+          <p className="text-red-600">{debug.error}</p>
+        </div>
+      )}
 
       {/* Фильтры */}
       <div className="bg-white p-4 rounded-lg shadow">
@@ -106,7 +175,14 @@ export default function ProductsPage() {
       {/* Список товаров */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Список товаров ({filteredProducts.length})</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Список товаров ({filteredProducts.length})
+          </h2>
+          {!debug.localStorageAvailable && (
+            <p className="text-sm text-red-600 mt-1">
+              ⚠️ localStorage недоступен
+            </p>
+          )}
         </div>
         <div className="p-6">
           {filteredProducts.length === 0 ? (
@@ -130,7 +206,7 @@ export default function ProductsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product: any) => (
                 <div key={product.id} className="bg-gray-50 rounded-lg p-4">
                   {product.imageUrl && (
                     <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden mb-4">
