@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const categories = [
   { value: 'rings', label: 'Кольца' },
@@ -28,16 +28,26 @@ export default function AddProductPage() {
     setLoading(true);
 
     try {
-      // Здесь будет API вызов для создания товара
-      console.log('Создание товара:', formData);
-      
-      // Имитация API вызова
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Создаем новый товар
+      const newProduct = {
+        id: Date.now().toString(), // Простой ID
+        ...formData,
+        price: parseFloat(formData.price),
+        createdAt: new Date().toISOString()
+      };
+
+      // Сохраняем в localStorage для демонстрации
+      const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
+      existingProducts.push(newProduct);
+      localStorage.setItem('juv_products', JSON.stringify(existingProducts));
+
+      console.log('Товар создан:', newProduct);
       
       // Перенаправление на список товаров
       router.push('/admin/products');
     } catch (error) {
       console.error('Ошибка при создании товара:', error);
+      alert('Ошибка при создании товара');
     } finally {
       setLoading(false);
     }
@@ -55,11 +65,10 @@ export default function AddProductPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Добавить товар</h1>
-          <p className="text-gray-600 mt-2">Создание нового товара в каталоге</p>
+          <h1 className="text-2xl font-bold text-gray-900">Добавить товар</h1>
+          <p className="text-gray-600">Создание нового товара в каталоге</p>
         </div>
         <Link
           href="/admin/products"
@@ -69,16 +78,15 @@ export default function AddProductPage() {
         </Link>
       </div>
 
-      {/* Form */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Информация о товаре</h2>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name */}
-            <div className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Форма */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">Информация о товаре</h2>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Название товара *
               </label>
@@ -93,8 +101,7 @@ export default function AddProductPage() {
               />
             </div>
 
-            {/* Description */}
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Описание *
               </label>
@@ -105,127 +112,146 @@ export default function AddProductPage() {
                 required
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Подробное описание товара, характеристики, материалы..."
+                placeholder="Подробное описание товара..."
               />
             </div>
 
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Цена (₽) *
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="85000"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Цена (₽) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Категория *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {categories.map(category => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Категория *
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {categories.map(category => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Image URL */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL изображения *
+                URL изображения
               </label>
               <input
                 type="url"
                 name="imageUrl"
                 value={formData.imageUrl}
                 onChange={handleInputChange}
-                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://example.com/image.jpg"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                Рекомендуемый размер: 400x400 пикселей
-              </p>
             </div>
 
-            {/* In Stock */}
-            <div className="md:col-span-2">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="inStock"
-                  checked={formData.inStock}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-sm text-gray-900">
-                  Товар в наличии
-                </label>
-              </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="inStock"
+                checked={formData.inStock}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-900">
+                Товар в наличии
+              </label>
             </div>
+
+            <div className="flex justify-end space-x-4">
+              <Link
+                href="/admin/products"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Отмена
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Создание...' : 'Создать товар'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Предварительный просмотр */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">Предварительный просмотр</h2>
           </div>
-
-          {/* Preview */}
-          {formData.imageUrl && (
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Предварительный просмотр</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center space-x-4">
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="w-20 h-20 object-cover rounded"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80x80?text=Ошибка+загрузки';
-                    }}
-                  />
-                  <div>
-                    <h4 className="font-medium text-gray-900">{formData.name || 'Название товара'}</h4>
-                    <p className="text-sm text-gray-600">{formData.description || 'Описание товара'}</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {formData.price ? `${Number(formData.price).toLocaleString()} ₽` : 'Цена не указана'}
-                    </p>
+          <div className="p-6">
+            {formData.name ? (
+              <div className="space-y-4">
+                {formData.imageUrl && (
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
+                    <img
+                      src={formData.imageUrl}
+                      alt={formData.name}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   </div>
+                )}
+                
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{formData.name}</h3>
+                  {formData.description && (
+                    <p className="text-sm text-gray-600 mt-2">{formData.description}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {formData.price ? `${parseFloat(formData.price).toLocaleString()} ₽` : 'Цена не указана'}
+                  </span>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    formData.inStock 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {formData.inStock ? 'В наличии' : 'Нет в наличии'}
+                  </span>
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  Категория: {categories.find(c => c.value === formData.category)?.label}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t">
-            <Link
-              href="/admin/products"
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-            >
-              Отмена
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Создание...' : 'Создать товар'}
-            </button>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-4">🛍</div>
+                <p className="text-gray-600">Заполните форму, чтобы увидеть предварительный просмотр</p>
+              </div>
+            )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
