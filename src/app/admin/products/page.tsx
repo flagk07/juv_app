@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [isClient, setIsClient] = useState(false);
   const [debug, setDebug] = useState({
     localStorageAvailable: false,
-    localStorageData: null,
-    error: null
+    localStorageData: null as string | null,
+    error: null as string | null
   });
 
   useEffect(() => {

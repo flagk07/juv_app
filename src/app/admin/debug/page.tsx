@@ -6,10 +6,10 @@ import Link from 'next/link'
 export default function DebugPage() {
   const [debugInfo, setDebugInfo] = useState({
     localStorageAvailable: false,
-    rawData: null,
-    parsedData: null,
-    error: null,
-    timestamp: null
+    rawData: null as string | null,
+    parsedData: null as any,
+    error: null as string | null,
+    timestamp: null as string | null
   });
 
   const [isClient, setIsClient] = useState(false);
