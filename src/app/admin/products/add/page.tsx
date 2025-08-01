@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 const categories = [
   { value: 'rings', label: 'Кольца' },
@@ -19,9 +20,9 @@ export default function AddProductPage() {
     name: '',
     description: '',
     price: '',
-    imageUrl: '',
+    image_url: '',
     category: 'rings',
-    inStock: true
+    in_stock: true
   });
 
   useEffect(() => {
@@ -33,34 +34,57 @@ export default function AddProductPage() {
     setLoading(true);
 
     try {
-      // Проверяем доступность localStorage
-      if (!isClient || typeof window === 'undefined' || !window.localStorage) {
-        throw new Error('localStorage недоступен');
-      }
-
       // Создаем новый товар
       const newProduct = {
-        id: Date.now().toString(),
-        ...formData,
+        name: formData.name,
+        description: formData.description,
         price: parseFloat(formData.price),
-        createdAt: new Date().toISOString()
+        image_url: formData.image_url,
+        category: formData.category,
+        in_stock: formData.in_stock
       };
 
-      // Сохраняем в localStorage
-      const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
-      existingProducts.push(newProduct);
-      localStorage.setItem('juv_products', JSON.stringify(existingProducts));
+      console.log('📤 Сохраняем товар в Supabase:', newProduct);
 
-      console.log('✅ Товар создан:', newProduct);
-      console.log('✅ Всего товаров:', existingProducts.length);
-      
-      alert('Товар успешно добавлен!');
-      
-      // Перенаправление на список товаров
+      // 1. Сохраняем в Supabase
+      const { data: supabaseProduct, error: supabaseError } = await supabase
+        .from('products')
+        .insert(newProduct)
+        .select()
+        .single();
+
+      if (supabaseError) {
+        console.error('❌ Ошибка Supabase:', supabaseError);
+        throw new Error(`Supabase: ${supabaseError.message}`);
+      }
+
+      console.log('✅ Товар сохранен в Supabase:', supabaseProduct);
+
+      // 2. Также сохраняем в localStorage для совместимости
+      if (isClient && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const localProduct = {
+            id: supabaseProduct.id,
+            ...newProduct,
+            createdAt: supabaseProduct.created_at
+          };
+
+          const existingProducts = JSON.parse(localStorage.getItem('juv_products') || '[]');
+          existingProducts.push(localProduct);
+          localStorage.setItem('juv_products', JSON.stringify(existingProducts));
+          
+          console.log('✅ Товар также сохранен в localStorage');
+        } catch (localError) {
+          console.warn('⚠️ Не удалось сохранить в localStorage:', localError);
+        }
+      }
+
+      alert('✅ Товар успешно добавлен в базу данных!');
       router.push('/admin/products');
+
     } catch (error) {
       console.error('❌ Ошибка при создании товара:', error);
-      alert(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      alert(`❌ Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
     } finally {
       setLoading(false);
     }
@@ -181,8 +205,8 @@ export default function AddProductPage() {
               </label>
               <input
                 type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
+                name="image_url"
+                value={formData.image_url}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://example.com/image.jpg"
@@ -192,8 +216,8 @@ export default function AddProductPage() {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                name="inStock"
-                checked={formData.inStock}
+                name="in_stock"
+                checked={formData.in_stock}
                 onChange={handleInputChange}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
@@ -214,7 +238,7 @@ export default function AddProductPage() {
                 disabled={loading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Создание...' : 'Создать товар'}
+                {loading ? 'Сохранение...' : 'Создать товар'}
               </button>
             </div>
           </form>
@@ -228,10 +252,10 @@ export default function AddProductPage() {
           <div className="p-6">
             {formData.name ? (
               <div className="space-y-4">
-                {formData.imageUrl && (
+                {formData.image_url && (
                   <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
                     <img
-                      src={formData.imageUrl}
+                      src={formData.image_url}
                       alt={formData.name}
                       className="w-full h-48 object-cover"
                       onError={(e) => {
@@ -253,11 +277,11 @@ export default function AddProductPage() {
                     {formData.price ? `${parseFloat(formData.price).toLocaleString()} ₽` : 'Цена не указана'}
                   </span>
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    formData.inStock 
+                    formData.in_stock 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {formData.inStock ? 'В наличии' : 'Нет в наличии'}
+                    {formData.in_stock ? 'В наличии' : 'Нет в наличии'}
                   </span>
                 </div>
 
@@ -276,4 +300,4 @@ export default function AddProductPage() {
       </div>
     </div>
   );
-} 
+}
