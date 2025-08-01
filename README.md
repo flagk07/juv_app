@@ -52,7 +52,7 @@ SUPABASE_URL=https://hsrqdpwzgcugnanssawpl.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # OpenAI
-OPENAI_API_KEY=sk-proj-8SVat7KfOBELOAlpvNBKZo5Qgx-1ajS8...
+OPENAI_API_KEY=your_openai_api_key_here
 
 # WebApp
 WEBAPP_URL=http://localhost:3000
