@@ -18,6 +18,53 @@ const navigation = [
   { name: 'Проверка', href: '/admin/test-changes', icon: '✅' },
 ]
 
+// Session helpers for admin auth persistence
+const SESSION_STORAGE_KEY = 'juv_admin_session';
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+type AdminSession = {
+  createdAt: number;
+  expiresAt: number;
+  type: 'telegram' | 'password';
+};
+
+function readSession(): AdminSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw) as AdminSession;
+    if (Date.now() > session.expiresAt) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function startSession(type: 'telegram' | 'password') {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  const session: AdminSession = {
+    createdAt: now,
+    expiresAt: now + SESSION_TTL_MS,
+    type,
+  };
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+function refreshSession() {
+  const session = readSession();
+  if (!session) return;
+  const refreshed: AdminSession = {
+    ...session,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  };
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(refreshed));
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,6 +74,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Сначала пытаемся восстановить сессию
+    const existing = readSession();
+    if (existing) {
+      setIsAuthorized(true);
+      setIsLoading(false);
+      refreshSession();
+      return;
+    }
+
     // Проверка админских прав через Telegram WebApp
     const checkAdminAccess = () => {
       const tg = (window as any).Telegram?.WebApp;
@@ -38,6 +94,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           console.log('Админ авторизован через Telegram:', userId);
           setIsAuthorized(true);
           setIsLoading(false);
+          startSession('telegram');
           return;
         }
       }
@@ -63,6 +120,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       console.log('Админ авторизован через браузер');
       setIsAuthorized(true);
       setShowLoginForm(false);
+      startSession('password');
     } else {
       alert('Неверный логин или пароль');
     }
@@ -189,7 +247,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-40 bg-white shadow-sm border-b">
+        <div className="sticky top-0 z-40 bg-white shadow-sm border-b" onMouseMove={refreshSession} onKeyDown={refreshSession}>
           <div className="flex items-center justify-between h-16 px-6">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -204,6 +262,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 onClick={() => {
                   setIsAuthorized(false);
                   setShowLoginForm(false);
+                  if (typeof window !== 'undefined') localStorage.removeItem(SESSION_STORAGE_KEY);
                 }}
                 className="text-sm text-red-600 hover:text-red-700"
               >
