@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { TelegramWebApp } from '@/lib/telegram'
 
 export default function Header() {
@@ -17,11 +18,18 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-              J
+            <div className="relative w-12 h-12">
+              <Image
+                src="/juv-logo.png"
+                alt="JUV"
+                fill
+                sizes="48px"
+                className="object-contain"
+                priority
+              />
             </div>
             <div className="ml-3">
-              <h1 className="text-xl font-serif font-bold text-primary-800">JUV</h1>
+              <h1 className="text-2xl font-serif font-bold text-primary-700 tracking-wide">JUV</h1>
               <p className="text-sm text-primary-600">Ювелирные изделия</p>
             </div>
           </div>
