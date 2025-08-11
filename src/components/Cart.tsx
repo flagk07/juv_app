@@ -118,7 +118,7 @@ export default function Cart({ items, onClose, onUpdateCart, telegramApp }: Cart
                     {item.product?.image_url ? (
                       <Image
                         src={item.product.image_url}
-                        alt={item.product.title}
+                        alt={item.product.name}
                         fill
                         className="object-cover"
                         sizes="64px"
@@ -133,7 +133,7 @@ export default function Cart({ items, onClose, onUpdateCart, telegramApp }: Cart
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-primary-800 truncate">
-                      {item.product?.title}
+                      {item.product?.name}
                     </h3>
                     <p className="text-primary-600 text-sm">
                       {formatPrice(item.product?.price || 0)}

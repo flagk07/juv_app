@@ -73,7 +73,7 @@ export default function CheckoutForm({
       // Prepare order items
       const orderItems = items.map(item => ({
         product_id: item.product_id,
-        title: item.product?.title,
+        title: item.product?.name ?? '',
         price: item.product?.price,
         quantity: item.quantity,
         total: (item.product?.price || 0) * item.quantity,
@@ -87,7 +87,7 @@ export default function CheckoutForm({
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           items: orderItems,
-          total_amount: totalAmount,
+          total: totalAmount,
           status: 'new',
         })
         .select()
@@ -206,7 +206,7 @@ export default function CheckoutForm({
               {items.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span className="text-primary-700">
-                    {item.product?.title} × {item.quantity}
+                    {(item.product?.name ?? '') as string} × {item.quantity}
                   </span>
                   <span className="text-primary-800 font-medium">
                     {formatPrice((item.product?.price || 0) * item.quantity)}

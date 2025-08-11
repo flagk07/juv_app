@@ -26,7 +26,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
         {product.image_url ? (
           <Image
             src={product.image_url}
-            alt={product.title}
+            alt={product.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -43,7 +43,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
       {/* Product Info */}
       <div className="space-y-3">
         <h3 className="font-serif font-semibold text-lg text-primary-800 line-clamp-2">
-          {product.title}
+          {product.name}
         </h3>
         
         {product.description && (
@@ -57,7 +57,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
             {formatPrice(product.price)}
           </span>
           <span className="text-sm text-primary-500">
-            В наличии: {product.quantity_available}
+            {product.in_stock ? 'В наличии' : 'Нет в наличии'}
           </span>
         </div>
 
@@ -73,7 +73,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
           
           <button
             onClick={() => onAddToCart(1)}
-            disabled={product.quantity_available === 0}
+            disabled={!product.in_stock}
             className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus size={16} />

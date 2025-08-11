@@ -17,12 +17,12 @@ export interface User {
 
 export interface Product {
   id: string
-  title: string
+  name: string
   description?: string
   image_url?: string
   price: number
-  quantity_available: number
-  is_active: boolean
+  category?: string
+  in_stock: boolean
   created_at: string
 }
 
@@ -40,10 +40,10 @@ export interface Order {
   id: string
   telegram_id: number
   user_id?: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   items: any[]
-  total_amount: number
+  total: number
   status: string
   created_at: string
 }

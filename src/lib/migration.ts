@@ -115,17 +115,22 @@ export async function testSupabaseConnection() {
   try {
     console.log('🔍 Проверяем подключение к Supabase...');
     
-    const { data, error } = await supabase
+    // Простой запрос для проверки подключения - получаем количество товаров
+    const { data, error, count } = await supabase
       .from('products')
-      .select('count(*)')
-      .single();
+      .select('id', { count: 'exact', head: true });
 
     if (error) {
+      console.error('❌ Ошибка Supabase:', error);
       throw new Error(`Supabase: ${error.message}`);
     }
 
-    console.log('✅ Подключение к Supabase успешно');
-    return { success: true, connected: true };
+    console.log('✅ Подключение к Supabase успешно, товаров:', count);
+    return { 
+      success: true, 
+      connected: true,
+      productsCount: count || 0
+    };
 
   } catch (error) {
     console.error('❌ Ошибка подключения к Supabase:', error);

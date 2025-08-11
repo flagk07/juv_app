@@ -57,7 +57,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
             {product.image_url ? (
               <Image
                 src={product.image_url}
-                alt={product.title}
+                alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 400px"
@@ -74,7 +74,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
           {/* Product Info */}
           <div className="space-y-4">
             <h3 className="text-2xl font-serif font-bold text-primary-800">
-              {product.title}
+              {product.name}
             </h3>
             
             {product.description && (
@@ -88,7 +88,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
                 {formatPrice(product.price)}
               </span>
               <span className="text-primary-500">
-                В наличии: {product.quantity_available} шт.
+                {product.in_stock ? 'В наличии' : 'Нет в наличии'}
               </span>
             </div>
 
@@ -110,9 +110,8 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
                 </span>
                 
                 <button
-                  onClick={() => setQuantity(Math.min(product.quantity_available, quantity + 1))}
-                  disabled={quantity >= product.quantity_available}
-                  className="w-10 h-10 rounded-lg border border-primary-300 flex items-center justify-center hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 rounded-lg border border-primary-300 flex items-center justify-center hover:bg-primary-50 transition-colors"
                 >
                   <Plus size={16} className="text-primary-600" />
                 </button>
@@ -132,10 +131,10 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
             {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              disabled={product.quantity_available === 0}
+              disabled={!product.in_stock}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {product.quantity_available === 0 ? 'Нет в наличии' : 'Добавить в корзину'}
+              {product.in_stock ? 'Добавить в корзину' : 'Нет в наличии'}
             </button>
           </div>
         </div>
