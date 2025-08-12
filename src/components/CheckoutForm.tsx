@@ -60,6 +60,10 @@ export default function CheckoutForm({
     }
 
     setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) {
+      setToast('Проверьте корректность email и телефона')
+      setTimeout(() => setToast(''), 3000)
+    }
     return Object.keys(newErrors).length === 0
   }
 
@@ -75,9 +79,7 @@ export default function CheckoutForm({
 
     try {
       const user = telegramApp?.getUser()
-      if (!user) {
-        throw new Error('Telegram user not found')
-      }
+      const telegramId = user?.id ?? 0
 
       // Prepare order items
       const orderItems = items.map(item => ({
@@ -92,7 +94,7 @@ export default function CheckoutForm({
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          telegram_id: user.id,
+          telegram_id: telegramId,
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           items: orderItems,
@@ -105,7 +107,7 @@ export default function CheckoutForm({
       if (orderError) throw orderError
 
       // Log order confirmation
-      logUserAction(user.id, user.username, 'confirm_order', {
+      logUserAction(telegramId, user?.username, 'confirm_order', {
         order_id: order.id,
         total_amount: totalAmount,
         items_count: items.length,
@@ -121,6 +123,8 @@ export default function CheckoutForm({
     } catch (error) {
       console.error('Error creating order:', error)
       telegramApp?.hapticFeedback('error')
+      setToast('Ошибка оформления заказа, попробуйте еще раз')
+      setTimeout(() => setToast(''), 3000)
     } finally {
       setLoading(false)
     }
