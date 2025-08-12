@@ -28,33 +28,31 @@ export default function Home() {
 
     // Setup menu button handler
     if (tgApp.isSupported()) {
-      console.log('🔧 Setting up menu button...');
-      // Show menu button
       tgApp.showMainButton('Меню', () => {
-        console.log('📱 Menu button clicked!');
-        // Send data to bot to show menu
-        const menuData = {
-          action: 'show_menu',
-          user_id: user?.id
-        };
-        console.log('📤 Sending menu data:', menuData);
+        const menuData = { action: 'show_menu', user_id: user?.id };
         tgApp.sendData(JSON.stringify(menuData));
       });
-      console.log('✅ Menu button setup complete');
-    } else {
-      console.log('❌ Telegram WebApp not supported');
     }
 
     // Load products and cart
     loadProducts()
     loadCart()
 
-    // Cleanup function
     return () => {
-      if (tgApp.isSupported()) {
-        tgApp.hideMainButton()
-      }
+      if (tgApp.isSupported()) tgApp.hideMainButton()
     }
+  }, [])
+
+  // Sync cart counter in header
+  useEffect(() => {
+    const count = cartItems.reduce((s, i) => s + i.quantity, 0)
+    window.dispatchEvent(new CustomEvent('cart:count', { detail: { count } }))
+  }, [cartItems])
+
+  useEffect(() => {
+    const openHandler = () => setShowCart(true)
+    window.addEventListener('cart:open', openHandler)
+    return () => window.removeEventListener('cart:open', openHandler)
   }, [])
 
   const loadProducts = async () => {
@@ -152,7 +150,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-200">
+    <div className="min-h-screen bg-white">
       <Header />
       
       <main className="container mx-auto px-4 py-6">

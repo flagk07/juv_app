@@ -2,14 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { ShoppingCart } from 'lucide-react'
 import { TelegramWebApp } from '@/lib/telegram'
 
 export default function Header() {
   const [user, setUser] = useState<any>(null)
+  const [cartCount, setCartCount] = useState<number>(0)
 
   useEffect(() => {
     const tgApp = TelegramWebApp.getInstance()
     setUser(tgApp.getUser())
+
+    // Подписка на событие обновления корзины
+    const handler = (e: any) => setCartCount(e.detail?.count ?? 0)
+    window.addEventListener('cart:count', handler)
+    return () => window.removeEventListener('cart:count', handler)
   }, [])
 
   return (
@@ -34,12 +41,24 @@ export default function Header() {
             </div>
           </div>
 
-          {/* User info */}
-          {user && (
-            <div className="flex items-center text-sm text-primary-700">
-              <span>Привет, {user.first_name}!</span>
-            </div>
-          )}
+          {/* Right side */}
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="hidden sm:block text-sm text-primary-700">Привет, {user.first_name}!</div>
+            )}
+            <button
+              aria-label="Открыть корзину"
+              onClick={() => window.dispatchEvent(new CustomEvent('cart:open'))}
+              className="relative p-2 rounded-lg hover:bg-cream-50"
+            >
+              <ShoppingCart className="text-primary-700" size={22} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-gold text-white text-[10px] rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </header>
