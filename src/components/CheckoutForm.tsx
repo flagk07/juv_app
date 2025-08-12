@@ -95,14 +95,6 @@ export default function CheckoutForm({
 
       if (orderError) throw orderError
 
-      // Clear cart
-      const { error: clearCartError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('telegram_id', user.id)
-
-      if (clearCartError) throw clearCartError
-
       // Log order confirmation
       logUserAction(user.id, user.username, 'confirm_order', {
         order_id: order.id,

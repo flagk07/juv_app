@@ -79,71 +79,51 @@ export default function Home() {
   }
 
   const loadCart = async () => {
-    if (!telegramApp) return
-
-    const userId = telegramApp.getUserId()
-    if (!userId) return
-
     try {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select(`
-          *,
-          product:products(*)
-        `)
-        .eq('telegram_id', userId)
-
-      if (error) throw error
-      setCartItems(data || [])
-    } catch (error) {
-      console.error('Error loading cart:', error)
-    }
+      const raw = localStorage.getItem('juv_cart')
+      const data = raw ? JSON.parse(raw) : []
+      setCartItems(data)
+    } catch {}
   }
 
   const addToCart = async (product: Product, quantity: number = 1) => {
-    if (!telegramApp) return
-
-    const user = telegramApp.getUser()
-    if (!user) return
-
     try {
-      // Check if item already in cart
-      const existingItem = cartItems.find(item => item.product_id === product.id)
-      
+      const existingItem = cartItems.find((i) => i.product_id === product.id)
+      let next
       if (existingItem) {
-        // Update quantity
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq('id', existingItem.id)
-
-        if (error) throw error
+        next = cartItems.map((i) => i.product_id === product.id ? { ...i, quantity: i.quantity + quantity } : i)
       } else {
-        // Add new item
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            telegram_id: user.id,
-            product_id: product.id,
-            quantity
-          })
-
-        if (error) throw error
+        next = [
+          ...cartItems,
+          { id: crypto.randomUUID(), product_id: product.id, quantity, product }
+        ]
       }
+      localStorage.setItem('juv_cart', JSON.stringify(next))
+      setCartItems(next)
 
-      // Log action
-      logUserAction(user.id, user.username, 'add_to_cart', { product_id: product.id, quantity })
-
-      // Haptic feedback and toast
-      telegramApp.hapticFeedback('success')
+      telegramApp?.hapticFeedback('success')
       showToast('Товар добавлен в корзину')
-
-      // Reload cart
-      loadCart()
     } catch (error) {
       console.error('Error adding to cart:', error)
       telegramApp?.hapticFeedback('error')
     }
+  }
+
+  const changeQuantity = (itemId: string, newQuantity: number) => {
+    const next = cartItems.map((i) => i.id === itemId ? { ...i, quantity: newQuantity } : i)
+    localStorage.setItem('juv_cart', JSON.stringify(next))
+    setCartItems(next)
+  }
+
+  const removeItem = (itemId: string) => {
+    const next = cartItems.filter((i) => i.id !== itemId)
+    localStorage.setItem('juv_cart', JSON.stringify(next))
+    setCartItems(next)
+  }
+
+  const clearCart = () => {
+    localStorage.removeItem('juv_cart')
+    setCartItems([])
   }
 
   const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
@@ -188,6 +168,9 @@ export default function Home() {
           items={cartItems}
           onClose={() => setShowCart(false)}
           onUpdateCart={loadCart}
+          onChangeQuantity={changeQuantity}
+          onRemoveItem={removeItem}
+          onClearCart={clearCart}
           telegramApp={telegramApp}
         />
       )}

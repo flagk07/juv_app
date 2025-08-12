@@ -22,13 +22,13 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
   return (
     <div className="bg-white rounded-[1.5rem] border border-[#eee] overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
       {/* Product Image */}
-      <div className="relative w-full h-[220px] overflow-hidden bg-white cursor-pointer" onClick={onViewDetails}>
+      <div className="relative aspect-square overflow-hidden bg-white cursor-pointer" onClick={onViewDetails}>
         {product.image_url ? (
           <Image
             src={product.image_url}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-contain bg-white"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CartItem, supabase, logUserAction } from '@/lib/supabase'
+import { CartItem } from '@/lib/supabase'
 import { TelegramWebApp } from '@/lib/telegram'
 import { X, Minus, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
@@ -11,10 +11,13 @@ interface CartProps {
   items: CartItem[]
   onClose: () => void
   onUpdateCart: () => void
+  onChangeQuantity: (itemId: string, newQuantity: number) => void
+  onRemoveItem: (itemId: string) => void
+  onClearCart: () => void
   telegramApp: TelegramWebApp | null
 }
 
-export default function Cart({ items, onClose, onUpdateCart, telegramApp }: CartProps) {
+export default function Cart({ items, onClose, onUpdateCart, onChangeQuantity, onRemoveItem, onClearCart, telegramApp }: CartProps) {
   const [showCheckout, setShowCheckout] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -28,20 +31,12 @@ export default function Cart({ items, onClose, onUpdateCart, telegramApp }: Cart
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
-
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', itemId)
-
-      if (error) throw error
-
+      onChangeQuantity(itemId, newQuantity)
       onUpdateCart()
       telegramApp?.hapticFeedback('light')
     } catch (error) {
-      console.error('Error updating quantity:', error)
       telegramApp?.hapticFeedback('error')
     } finally {
       setLoading(false)
@@ -51,17 +46,10 @@ export default function Cart({ items, onClose, onUpdateCart, telegramApp }: Cart
   const removeItem = async (itemId: string) => {
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId)
-
-      if (error) throw error
-
+      onRemoveItem(itemId)
       onUpdateCart()
       telegramApp?.hapticFeedback('success')
     } catch (error) {
-      console.error('Error removing item:', error)
       telegramApp?.hapticFeedback('error')
     } finally {
       setLoading(false)
@@ -79,6 +67,7 @@ export default function Cart({ items, onClose, onUpdateCart, telegramApp }: Cart
         totalAmount={totalAmount}
         onClose={() => setShowCheckout(false)}
         onSuccess={() => {
+          onClearCart()
           onClose()
           onUpdateCart()
         }}
