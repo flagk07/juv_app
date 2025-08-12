@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CartItem, supabase, logUserAction } from '@/lib/supabase'
 import { TelegramWebApp } from '@/lib/telegram'
-import { X, User, Mail, Phone } from 'lucide-react'
+import { X, User } from 'lucide-react'
 
 interface CheckoutFormProps {
   items: CartItem[]
@@ -26,6 +26,15 @@ export default function CheckoutForm({
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [toast, setToast] = useState<string>('')
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -102,19 +111,15 @@ export default function CheckoutForm({
         items_count: items.length,
       })
 
-      // Show success message
-      telegramApp?.showAlert(
-        `Заказ №${order.id.slice(-8)} успешно оформлен!\n\nМы свяжемся с вами в ближайшее время для подтверждения.`,
-        () => {
-          onSuccess()
-        }
-      )
-
       telegramApp?.hapticFeedback('success')
+      setToast('Ваш заказ оформлен, скоро свяжемся с вами для подтверждения')
+      setTimeout(() => {
+        setToast('')
+        onSuccess()
+      }, 3000)
 
     } catch (error) {
       console.error('Error creating order:', error)
-      telegramApp?.showAlert('Произошла ошибка при оформлении заказа. Попробуйте еще раз.')
       telegramApp?.hapticFeedback('error')
     } finally {
       setLoading(false)
@@ -153,17 +158,14 @@ export default function CheckoutForm({
                 <label className="block text-sm font-medium text-primary-700 mb-2">
                   Email *
                 </label>
-                <div className="relative">
-                  <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-400" />
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className={`input-field pl-11 ${errors.email ? 'border-red-500' : ''}`}
-                    placeholder="your@email.com"
-                    disabled={loading}
-                  />
-                </div>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className={`input-field ${errors.email ? 'border-red-500' : ''}`}
+                  placeholder="your@email.com"
+                  disabled={loading}
+                />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
@@ -174,17 +176,14 @@ export default function CheckoutForm({
                 <label className="block text-sm font-medium text-primary-700 mb-2">
                   Номер телефона *
                 </label>
-                <div className="relative">
-                  <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-400" />
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className={`input-field pl-11 ${errors.phone ? 'border-red-500' : ''}`}
-                    placeholder="+7 (999) 123-45-67"
-                    disabled={loading}
-                  />
-                </div>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className={`input-field ${errors.phone ? 'border-red-500' : ''}`}
+                  placeholder="+7 (999) 123-45-67"
+                  disabled={loading}
+                />
                 {errors.phone && (
                   <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                 )}
@@ -229,6 +228,12 @@ export default function CheckoutForm({
           </form>
         </div>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#111] text-white px-4 py-2 rounded-full shadow-elegant text-sm">
+          {toast}
+        </div>
+      )}
     </div>
   )
 } 

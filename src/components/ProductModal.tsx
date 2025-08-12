@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Product, logUserAction } from '@/lib/supabase'
 import { TelegramWebApp } from '@/lib/telegram'
 import { X, Minus, Plus } from 'lucide-react'
@@ -14,6 +14,14 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, onClose, onAddToCart }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1)
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ru-RU', {
