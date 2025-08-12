@@ -14,6 +14,12 @@ export default function Home() {
   const [showCart, setShowCart] = useState(false)
   const [loading, setLoading] = useState(true)
   const [telegramApp, setTelegramApp] = useState<TelegramWebApp | null>(null)
+  const [toast, setToast] = useState<{ visible: boolean; text: string }>({ visible: false, text: '' })
+
+  const showToast = (text: string) => {
+    setToast({ visible: true, text })
+    setTimeout(() => setToast({ visible: false, text: '' }), 3000)
+  }
 
   useEffect(() => {
     // Initialize Telegram WebApp
@@ -128,8 +134,9 @@ export default function Home() {
       // Log action
       logUserAction(user.id, user.username, 'add_to_cart', { product_id: product.id, quantity })
 
-      // Haptic feedback
+      // Haptic feedback and toast
       telegramApp.hapticFeedback('success')
+      showToast('Товар добавлен в корзину')
 
       // Reload cart
       loadCart()
@@ -183,6 +190,12 @@ export default function Home() {
           onUpdateCart={loadCart}
           telegramApp={telegramApp}
         />
+      )}
+
+      {toast.visible && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#111] text-white px-4 py-2 rounded-full shadow-elegant text-sm">
+          {toast.text}
+        </div>
       )}
     </div>
   )

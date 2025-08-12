@@ -35,10 +35,10 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50">
+      <div className="bg-white rounded-2xl max-w-sm w-full max-h-[80vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-cream-200">
+        <div className="flex items-center justify-between p-4 border-b border-cream-200">
           <h2 className="text-xl font-serif font-bold text-primary-800">
             Детали товара
           </h2>
@@ -51,7 +51,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           {/* Product Image */}
           <div className="relative aspect-square rounded-xl overflow-hidden bg-cream-100">
             {product.image_url ? (
@@ -72,13 +72,13 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
           </div>
 
           {/* Product Info */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <h3 className="text-2xl font-serif font-bold text-primary-800">
               {product.name}
             </h3>
             
             {product.description && (
-              <p className="text-primary-600 leading-relaxed">
+              <p className="text-primary-600 leading-relaxed text-sm">
                 {product.description}
               </p>
             )}
@@ -119,7 +119,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
             </div>
 
             {/* Total Price */}
-            <div className="bg-cream-100 rounded-xl p-4">
+            <div className="bg-cream-100 rounded-xl p-3">
               <div className="flex items-center justify-between">
                 <span className="text-primary-700 font-medium">Итого:</span>
                 <span className="text-xl font-bold text-primary-800">

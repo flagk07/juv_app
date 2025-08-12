@@ -1,21 +1,41 @@
-'use client'
+"use client"
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<'all' | 'new' | 'processing' | 'completed'>('all');
 
   useEffect(() => {
-    // В реальном проекте здесь будет загрузка заказов с сервера
-    setOrders([]);
-    setLoading(false);
-  }, []);
+    loadOrders();
+  }, [filter]);
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    // В реальном проекте здесь будет обновление статуса на сервере
-    console.log(`Обновление статуса заказа ${orderId} на ${newStatus}`);
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      let query = supabase.from('orders').select('*').order('created_at', { ascending: false })
+      if (filter !== 'all') query = query.eq('status', filter)
+      const { data, error } = await query
+      if (error) throw error
+      setOrders(data || [])
+    } catch (e) {
+      console.error('Failed to load orders', e)
+      setOrders([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
+      if (error) throw error
+      loadOrders()
+    } catch (e) {
+      console.error('Failed to update order', e)
+    }
   };
 
   if (loading) {
@@ -36,38 +56,15 @@ export default function OrdersPage() {
       {/* Фильтры */}
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Все
-          </button>
-          <button
-            onClick={() => setFilter('new')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              filter === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Новые
-          </button>
-          <button
-            onClick={() => setFilter('processing')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              filter === 'processing' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            В обработке
-          </button>
-          <button
-            onClick={() => setFilter('completed')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
-              filter === 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Завершенные
-          </button>
+          {(['all','new','processing','completed'] as const).map(k => (
+            <button
+              key={k}
+              onClick={() => setFilter(k)}
+              className={`px-4 py-2 rounded-md text-sm font-medium ${filter === k ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              {k === 'all' ? 'Все' : k === 'new' ? 'Новые' : k === 'processing' ? 'В обработке' : 'Завершенные'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -85,7 +82,32 @@ export default function OrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Здесь будут отображаться заказы */}
+              {orders.map((o) => (
+                <div key={o.id} className="border border-cream-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">№ {o.id.slice(-8)} · {new Date(o.created_at).toLocaleString()}</div>
+                      <div className="text-sm text-gray-600">Телеграм ID: {o.telegram_id}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{Number(o.total).toLocaleString()} ₽</div>
+                      <div className="text-sm text-gray-600">Статус: {o.status}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-sm text-gray-700">
+                    {Array.isArray(o.items) && o.items.map((it: any, idx: number) => (
+                      <div key={idx} className="flex justify-between">
+                        <span>{it.title} × {it.quantity}</span>
+                        <span>{Number(it.total).toLocaleString()} ₽</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => updateOrderStatus(o.id, 'processing')} className="px-3 py-1 text-sm bg-blue-50 hover:bg-blue-100 rounded">В обработку</button>
+                    <button onClick={() => updateOrderStatus(o.id, 'completed')} className="px-3 py-1 text-sm bg-green-50 hover:bg-green-100 rounded">Завершить</button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
