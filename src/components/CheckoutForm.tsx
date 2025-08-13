@@ -95,8 +95,7 @@ export default function CheckoutForm({
         .from('orders')
         .insert({
           telegram_id: telegramId,
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
+          contact_info: { email: formData.email.trim(), phone: formData.phone.trim() },
           items: orderItems,
           total: totalAmount,
           status: 'new',
