@@ -23,6 +23,7 @@ export interface Product {
   price: number
   category?: string
   in_stock: boolean
+  sku?: string
   created_at: string
 }
 

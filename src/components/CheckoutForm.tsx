@@ -88,6 +88,8 @@ export default function CheckoutForm({
         price: item.product?.price,
         quantity: item.quantity,
         total: (item.product?.price || 0) * item.quantity,
+        sku: item.product?.sku,
+        image_url: item.product?.image_url,
       }))
 
       // Create order

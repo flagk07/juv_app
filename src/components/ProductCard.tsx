@@ -46,6 +46,10 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
           <p className="card-desc text-sm text-[#666] mt-2 line-clamp-2">{product.description}</p>
         )}
 
+        {product.sku && (
+          <div className="text-xs text-gray-400 mt-1">АРТ: {product.sku}</div>
+        )}
+
         <div className="mt-3 flex items-center justify-between">
           <span className="price font-semibold text-[1rem] text-[#111]">
             {formatPrice(product.price)}

@@ -34,6 +34,9 @@ export default function AddProductPage() {
     setLoading(true);
 
     try {
+      // Генерируем артикул из 8 цифр
+      const sku = Math.floor(10000000 + Math.random() * 90000000).toString();
+
       // Создаем новый товар
       const newProduct = {
         name: formData.name,
@@ -41,7 +44,8 @@ export default function AddProductPage() {
         price: parseFloat(formData.price),
         image_url: formData.image_url,
         category: formData.category,
-        in_stock: formData.in_stock
+        in_stock: formData.in_stock,
+        sku
       };
 
       console.log('📤 Сохраняем товар в Supabase:', newProduct);

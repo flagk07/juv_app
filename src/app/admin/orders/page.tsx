@@ -94,11 +94,19 @@ export default function OrdersPage() {
                       <div className="text-sm text-gray-600">Статус: {o.status}</div>
                     </div>
                   </div>
-                  <div className="mt-3 text-sm text-gray-700">
+                  <div className="mt-3 text-sm text-gray-700 space-y-2">
                     {Array.isArray(o.items) && o.items.map((it: any, idx: number) => (
-                      <div key={idx} className="flex justify-between">
-                        <span>{it.title} × {it.quantity}</span>
-                        <span>{Number(it.total).toLocaleString()} ₽</span>
+                      <div key={idx} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {it.image_url && (
+                            <img src={it.image_url} alt={it.title} className="w-10 h-10 rounded object-cover border" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="truncate">{it.title} × {it.quantity}</div>
+                            {it.sku && <div className="text-xs text-gray-400">АРТ: {it.sku}</div>}
+                          </div>
+                        </div>
+                        <span className="whitespace-nowrap">{Number(it.total).toLocaleString()} ₽</span>
                       </div>
                     ))}
                   </div>

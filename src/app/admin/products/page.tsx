@@ -375,9 +375,10 @@ export default function ProductsPage() {
                       <span className="text-xl font-bold text-gray-900">
                         {product.price.toLocaleString()} ₽
                       </span>
-                      <span className="text-sm text-gray-500 capitalize">
-                        {product.category}
-                      </span>
+                      <div className="text-right text-sm text-gray-500">
+                        <div className="capitalize">{product.category}</div>
+                        {product.sku && <div className="text-xs text-gray-400">АРТ: {product.sku}</div>}
+                      </div>
                     </div>
                     
                     <div className="flex space-x-2 pt-2">
