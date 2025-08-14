@@ -2,7 +2,6 @@
 
 import { Product } from '@/lib/supabase'
 import { Eye, Plus } from 'lucide-react'
-import Image from 'next/image'
 
 interface ProductCardProps {
   product: Product
@@ -24,12 +23,11 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-white cursor-pointer" onClick={onViewDetails}>
         {product.image_url ? (
-          <Image
+          <img
             src={product.image_url}
             alt={product.name}
-            fill
-            className="object-contain bg-white"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="w-full h-full object-contain bg-white"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-white" />
