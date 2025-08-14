@@ -14,7 +14,7 @@ ps aux | grep node
 ### 2. Неправильный токен бота
 Проверьте переменную `BOT_TOKEN` в `.env`:
 ```env
-BOT_TOKEN=7726909438:AAFzQxlxSr3S1wa1aIsgmg4nZm3-jQtWihQ
+BOT_TOKEN=7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws
 ```
 
 ### 3. Бот заблокирован или удален

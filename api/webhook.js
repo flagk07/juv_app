@@ -102,9 +102,14 @@ async function ensureUser(telegramId, username) {
   }
 }
 
+// Helper to get bot token with fallback
+function getBotToken() {
+  return process.env.BOT_TOKEN || '7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws';
+}
+
 // Send message to Telegram
 async function sendMessage(chatId, text, replyMarkup = null) {
-  const botToken = process.env.BOT_TOKEN || '7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws';
+  const botToken = getBotToken();
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   const payload = {
@@ -150,156 +155,159 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    const message = update.message;
-    const chatId = message.chat.id;
-    const userId = message.from.id;
-    const username = message.from.username;
-    const text = message.text;
+    // Handle text messages and commands
+    if (update.message) {
+      const message = update.message;
+      const chatId = message.chat.id;
+      const userId = message.from.id;
+      const username = message.from.username;
+      const text = message.text;
 
-    // Ensure user exists
-    await ensureUser(userId, username);
+      // Ensure user exists
+      await ensureUser(userId, username);
 
-    // Handle commands
-    if (text === '/start') {
-      await logUserAction(userId, username, 'start_bot');
-      
-      const firstName = message.from.first_name || 'Друг';
+      // Handle commands
+      if (text === '/start') {
+        await logUserAction(userId, username, 'start_bot');
+        
+        const firstName = message.from.first_name || 'Друг';
 
-      await sendMessage(
-        chatId,
-        `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
-        `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
-        `Используйте кнопку "Меню" в левом нижнем углу для навигации.`
-      );
-    }
-    else if (text === '/shop') {
-      await logUserAction(userId, username, 'open_webapp');
-      
-      const shopMenu = {
-        inline_keyboard: [
-          [
-            {
-              text: 'Открыть магазин',
-              web_app: { url: 'https://juv-app.vercel.app/' }
-            }
-          ]
-        ]
-      };
-
-      await sendMessage(
-        chatId,
-        '🛍 Добро пожаловать в магазин JUV!\n\nОткройте наш каталог украшений:',
-        shopMenu
-      );
-    }
-    else if (text === '/assistant') {
-      await logUserAction(userId, username, 'call_support');
-      
-      await sendMessage(
-        chatId,
-        '🤖 AI-помощник JUV активирован!\n\n' +
-        'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
-      );
-    }
-    else if (text === '/menu') {
-      await logUserAction(userId, username, 'open_menu');
-      
-      const menuKeyboard = {
-        inline_keyboard: [
-          [
-            {
-              text: '🛍 Магазин',
-              web_app: { url: 'https://juv-app.vercel.app/' }
-            }
-          ],
-          [
-            {
-              text: '🤖 Помощь',
-              callback_data: 'help_assistant'
-            }
-          ],
-          [
-            {
-              text: '❓ Справка',
-              callback_data: 'info'
-            }
-          ]
-        ]
-      };
-
-      // Добавить кнопку статистики только для админа
-      const adminId = process.env.ADMIN_ID || '195830791';
-      if (userId.toString() === adminId) {
-        menuKeyboard.inline_keyboard.splice(2, 0, [
-          {
-            text: '📊 Статистика',
-            callback_data: 'stats'
-          }
-        ]);
+        await sendMessage(
+          chatId,
+          `✨ Добро пожаловать в JUV, ${firstName}!\n\n` +
+          `Мы создаем изысканные ювелирные украшения, которые подчеркивают вашу индивидуальность.\n\n` +
+          `Используйте кнопку "Меню" в левом нижнем углу для навигации.`
+        );
       }
+      else if (text === '/shop') {
+        await logUserAction(userId, username, 'open_webapp');
+        
+        const shopMenu = {
+          inline_keyboard: [
+            [
+              {
+                text: 'Открыть магазин',
+                web_app: { url: 'https://juv-app.vercel.app/' }
+              }
+            ]
+          ]
+        };
 
-      await sendMessage(
-        chatId,
-        '📋 **Меню JUV**\n\n' +
-        'Выберите нужное действие:',
-        menuKeyboard
-      );
-    }
-    else if (text === '/help') {
-      await sendMessage(
-        chatId,
-        '📋 Доступные команды:\n\n' +
-        '🛍 /shop - Открыть магазин\n' +
-        '🤖 /assistant - AI-помощник\n' +
-        '📋 /menu - Показать меню\n' +
-        '📞 /start - Главное меню\n' +
-        '❓ /help - Эта справка\n\n' +
-        'Используйте кнопки меню для удобной навигации!'
-      );
-    }
-        else if (text === '/stats') {
-      const adminId = process.env.ADMIN_ID || '195830791';
-      if (userId.toString() === adminId) {
-        // Admin stats
-        try {
-          const { count: userCount } = await supabase
-            .from('users')
-            .select('*', { count: 'exact', head: true });
+        await sendMessage(
+          chatId,
+          '🛍 Добро пожаловать в магазин JUV!\n\nОткройте наш каталог украшений:',
+          shopMenu
+        );
+      }
+      else if (text === '/assistant') {
+        await logUserAction(userId, username, 'call_support');
+        
+        await sendMessage(
+          chatId,
+          '🤖 AI-помощник JUV активирован!\n\n' +
+          'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
+        );
+      }
+      else if (text === '/menu') {
+        await logUserAction(userId, username, 'open_menu');
+        
+        const menuKeyboard = {
+          inline_keyboard: [
+            [
+              {
+                text: '🛍 Магазин',
+                web_app: { url: 'https://juv-app.vercel.app/' }
+              }
+            ],
+            [
+              {
+                text: '🤖 Помощь',
+                callback_data: 'help_assistant'
+              }
+            ],
+            [
+              {
+                text: '❓ Справка',
+                callback_data: 'info'
+              }
+            ]
+          ]
+        };
 
-          const { count: orderCount } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true });
-
-          await sendMessage(
-            chatId,
-            `📊 Статистика JUV:\n\n` +
-            `👥 Пользователей: ${userCount || 0}\n` +
-            `🛒 Заказов: ${orderCount || 0}`
-          );
-        } catch (error) {
-          await sendMessage(chatId, 'Ошибка при получении статистики.');
+        // Добавить кнопку статистики только для админа
+        const adminId = process.env.ADMIN_ID || '195830791';
+        if (userId.toString() === adminId) {
+          menuKeyboard.inline_keyboard.splice(2, 0, [
+            {
+              text: '📊 Статистика',
+              callback_data: 'stats'
+            }
+          ]);
         }
-      } else {
-        await sendMessage(chatId, '❌ Статистика доступна только администратору.');
-      }
-    }
-    else if (text && !text.startsWith('/')) {
-      // AI Assistant response
-      await logUserAction(userId, username, 'ai_question', { question: text });
-      
-      const aiResponse = await callOpenAI(text);
-      
-      await sendMessage(
-        chatId,
-        `🤖 ${aiResponse}\n\n` +
-        `❓ Есть еще вопросы? Просто напишите их.\n` +
-        `🛍 Чтобы открыть магазин, используйте /menu`
-      );
 
-      await logUserAction(userId, username, 'ai_response', { 
-        question: text, 
-        response: aiResponse.substring(0, 100) + '...' 
-      });
+        await sendMessage(
+          chatId,
+          '📋 **Меню JUV**\n\n' +
+          'Выберите нужное действие:',
+          menuKeyboard
+        );
+      }
+      else if (text === '/help') {
+        await sendMessage(
+          chatId,
+          '📋 Доступные команды:\n\n' +
+          '🛍 /shop - Открыть магазин\n' +
+          '🤖 /assistant - AI-помощник\n' +
+          '📋 /menu - Показать меню\n' +
+          '📞 /start - Главное меню\n' +
+          '❓ /help - Эта справка\n\n' +
+          'Используйте кнопки меню для удобной навигации!'
+        );
+      }
+      else if (text === '/stats') {
+        const adminId = process.env.ADMIN_ID || '195830791';
+        if (userId.toString() === adminId) {
+          // Admin stats
+          try {
+            const { count: userCount } = await supabase
+              .from('users')
+              .select('*', { count: 'exact', head: true });
+
+            const { count: orderCount } = await supabase
+              .from('orders')
+              .select('*', { count: 'exact', head: true });
+
+            await sendMessage(
+              chatId,
+              `📊 Статистика JUV:\n\n` +
+              `👥 Пользователей: ${userCount || 0}\n` +
+              `🛒 Заказов: ${orderCount || 0}`
+            );
+          } catch (error) {
+            await sendMessage(chatId, 'Ошибка при получении статистики.');
+          }
+        } else {
+          await sendMessage(chatId, '❌ Статистика доступна только администратору.');
+        }
+      }
+      else if (text && !text.startsWith('/')) {
+        // AI Assistant response
+        await logUserAction(userId, username, 'ai_question', { question: text });
+        
+        const aiResponse = await callOpenAI(text);
+        
+        await sendMessage(
+          chatId,
+          `🤖 ${aiResponse}\n\n` +
+          `❓ Есть еще вопросы? Просто напишите их.\n` +
+          `🛍 Чтобы открыть магазин, используйте /menu`
+        );
+
+        await logUserAction(userId, username, 'ai_response', { 
+          question: text, 
+          response: aiResponse.substring(0, 100) + '...' 
+        });
+      }
     }
 
     // Handle callback queries (button presses)
@@ -419,7 +427,7 @@ export default async function handler(req, res) {
       }
 
       // Answer callback query
-      await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/answerCallbackQuery`, {
+      await fetch(`https://api.telegram.org/bot${getBotToken()}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callback_query_id: callbackQuery.id })
