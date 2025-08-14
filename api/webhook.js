@@ -163,11 +163,21 @@ export default async function handler(req, res) {
       const username = message.from.username;
       const text = message.text;
 
+      // Normalize and extract command
+      const rawText = typeof text === 'string' ? text.trim() : '';
+      const commandEntity = Array.isArray(message.entities)
+        ? message.entities.find((e) => e.type === 'bot_command' && e.offset === 0)
+        : null;
+      const commandText = commandEntity
+        ? rawText.slice(0, commandEntity.length)
+        : rawText.split(' ')[0];
+      const command = (commandText || '').split('@')[0].toLowerCase();
+
       // Ensure user exists
       await ensureUser(userId, username);
 
       // Handle commands
-      if (text === '/start') {
+      if (command === '/start') {
         await logUserAction(userId, username, 'start_bot');
         
         const firstName = message.from.first_name || 'Друг';
@@ -179,7 +189,7 @@ export default async function handler(req, res) {
           `Используйте кнопку "Меню" в левом нижнем углу для навигации.`
         );
       }
-      else if (text === '/shop') {
+      else if (command === '/shop') {
         await logUserAction(userId, username, 'open_webapp');
         
         const shopMenu = {
@@ -199,7 +209,7 @@ export default async function handler(req, res) {
           shopMenu
         );
       }
-      else if (text === '/assistant') {
+      else if (command === '/assistant') {
         await logUserAction(userId, username, 'call_support');
         
         await sendMessage(
@@ -208,7 +218,7 @@ export default async function handler(req, res) {
           'Я эксперт по ювелирным изделиям. Задайте ваш вопрос:'
         );
       }
-      else if (text === '/menu') {
+      else if (command === '/menu') {
         await logUserAction(userId, username, 'open_menu');
         
         const menuKeyboard = {
@@ -252,7 +262,7 @@ export default async function handler(req, res) {
           menuKeyboard
         );
       }
-      else if (text === '/help') {
+      else if (command === '/help') {
         await sendMessage(
           chatId,
           '📋 Доступные команды:\n\n' +
@@ -264,7 +274,7 @@ export default async function handler(req, res) {
           'Используйте кнопки меню для удобной навигации!'
         );
       }
-      else if (text === '/stats') {
+      else if (command === '/stats') {
         const adminId = process.env.ADMIN_ID || '195830791';
         if (userId.toString() === adminId) {
           // Admin stats
@@ -290,11 +300,11 @@ export default async function handler(req, res) {
           await sendMessage(chatId, '❌ Статистика доступна только администратору.');
         }
       }
-      else if (text && !text.startsWith('/')) {
+      else if (rawText && !rawText.startsWith('/')) {
         // AI Assistant response
-        await logUserAction(userId, username, 'ai_question', { question: text });
+        await logUserAction(userId, username, 'ai_question', { question: rawText });
         
-        const aiResponse = await callOpenAI(text);
+        const aiResponse = await callOpenAI(rawText);
         
         await sendMessage(
           chatId,
@@ -304,7 +314,7 @@ export default async function handler(req, res) {
         );
 
         await logUserAction(userId, username, 'ai_response', { 
-          question: text, 
+          question: rawText, 
           response: aiResponse.substring(0, 100) + '...' 
         });
       }
@@ -498,4 +508,4 @@ export default async function handler(req, res) {
     console.error('Webhook error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}
