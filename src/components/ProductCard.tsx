@@ -20,7 +20,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
   }
 
   return (
-    <div className="bg-white rounded-[1.5rem] border border-[#eee] overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)]">
+    <div className="bg-white rounded-[1.5rem] border border-[#eee] overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] flex flex-col">
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-white cursor-pointer" onClick={onViewDetails}>
         {product.image_url ? (
@@ -37,7 +37,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
       </div>
 
       {/* Product Info */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 flex flex-col flex-1">
         <h3 className="card-title text-[1.1rem] font-semibold text-[#111] line-clamp-2 cursor-pointer" onClick={onViewDetails}>
           {product.name}
         </h3>
@@ -60,7 +60,7 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-3">
+        <div className="flex gap-2 pt-3 mt-auto">
           <button
             onClick={onViewDetails}
             className="flex-1 bg-[#111] text-white font-medium py-3 px-6 rounded-full transition-colors duration-200 flex items-center justify-center gap-2 hover:bg-[#333]"
