@@ -86,7 +86,7 @@ export default function Cart({ items, onClose, onUpdateCart, onChangeQuantity, o
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white rounded-t-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
+      <div className="bg-white rounded-t-2xl w-full max-w-md h-[85vh] max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-cream-200">
           <h2 className="text-xl font-serif font-bold text-primary-800">
@@ -182,7 +182,7 @@ export default function Cart({ items, onClose, onUpdateCart, onChangeQuantity, o
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t border-cream-200 p-6 space-y-4">
+          <div className="border-t border-cream-200 p-4 space-y-4 bg-white">
             <div className="flex items-center justify-between">
               <span className="text-lg font-medium text-primary-700">Итого:</span>
               <span className="text-xl font-bold text-primary-800">
