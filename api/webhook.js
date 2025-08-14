@@ -104,7 +104,7 @@ async function ensureUser(telegramId, username) {
 
 // Send message to Telegram
 async function sendMessage(chatId, text, replyMarkup = null) {
-  const botToken = process.env.BOT_TOKEN || '7726909438:AAEzSNjZ1uNDRlQAioroXnLQ-DIlJwmmYus';
+  const botToken = process.env.BOT_TOKEN || '7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws';
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   const payload = {
