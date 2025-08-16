@@ -78,7 +78,7 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="sticky top-0 bg-gray-50 z-10 pt-1 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Панель управления</h1>
           <p className="text-gray-600">Управление заказами, товарами и пользователями</p>
