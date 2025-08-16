@@ -9,17 +9,29 @@ const supabase = createClient(
 // OpenAI model selection
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
 
+function resolveModelName(requested) {
+  const model = (requested || '').toLowerCase();
+  // Temporary fallback if experimental model is not available
+  if (model.startsWith('gpt-5')) return 'gpt-4o';
+  return model || 'gpt-4o';
+}
+
 // OpenAI integration
 async function callOpenAI(question) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return 'AI временно недоступен. Пожалуйста, попробуйте позже.';
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: resolveModelName(OPENAI_MODEL),
         messages: [
           {
             role: 'system',
@@ -46,6 +58,28 @@ async function callOpenAI(question) {
         temperature: 0.7
       })
     });
+
+    if (!response.ok) {
+      // Retry once with stable fallback
+      const retry = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: 'Вы — эксперт по ювелирным изделиям JUV. Отвечайте до 500 символов.' },
+            { role: 'user', content: question }
+          ],
+          max_tokens: 200,
+          temperature: 0.7
+        })
+      });
+      const retryData = await retry.json();
+      return retryData.choices?.[0]?.message?.content || 'Извините, не смог обработать ваш вопрос.';
+    }
 
     const data = await response.json();
     return data.choices[0]?.message?.content || 'Извините, не смог обработать ваш вопрос.';
@@ -274,10 +308,10 @@ export default async function handler(req, res) {
         await sendMessage(
           chatId,
           '📋 Доступные команды:\n\n' +
-          '🛍 Открыть магазин (/shop)\n' +
-          '🤖 AI-помощник (/assistant)\n' +
-          '📋 Меню (/menu)\n' +
-          '🛑 Стоп (/stop)\n\n' +
+          '🛍 Открыть магазин (/shop) — открыть каталог украшений JUV\n' +
+          '🤖 AI-помощник (/assistant) — задать вопросы об изделиях, размерах, материалах\n' +
+          '📋 Меню (/menu) — показать клавиатуру действий\n' +
+          '🛑 Стоп (/stop) — остановить диалог с AI\n\n' +
           'Используйте кнопки меню для удобной навигации!'
         );
       }
