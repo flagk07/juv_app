@@ -320,6 +320,44 @@ export default async function handler(req, res) {
           '🛑 Стоп (/stop) — остановить диалог с AI\n\n' +
           'Используйте кнопки меню для удобной навигации!'
         );
+            }
+      else if (command === '/orders') {
+        try {
+          const { data: orders, error } = await supabase
+            .from('orders')
+            .select('id, items, status, created_at')
+            .eq('telegram_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+          if (error) throw error;
+
+          if (!orders || orders.length === 0) {
+            await sendMessage(chatId, '🧾 У вас пока нет заказов.');
+          } else {
+            const statusMap = {
+              new: 'заказ создан',
+              pending: 'заказ создан',
+              processing: 'в обработке',
+              completed: 'завершен'
+            };
+
+            const lines = orders.map((o) => {
+              const shortId = (o.id || '').toString().slice(0, 8);
+              const items = Array.isArray(o.items) ? o.items : [];
+              const itemsText = items
+                .map((it) => `${it.title || 'Товар'}${it.sku ? ` (${it.sku})` : ''}`)
+                .join(', ');
+              const statusText = statusMap[o.status] || o.status || 'заказ создан';
+              return `№ ${shortId}\n${itemsText || 'без позиций'}\nСтатус: ${statusText}`;
+            });
+
+            await sendMessage(chatId, `🧾 Ваши заказы:\n\n${lines.join('\n\n')}`);
+          }
+        } catch (e) {
+          console.error('Orders fetch error:', e);
+          await sendMessage(chatId, 'Не удалось получить список заказов. Попробуйте позже.');
+        }
       }
       else if (command === '/stats') {
         const adminId = process.env.ADMIN_ID || '195830791';
