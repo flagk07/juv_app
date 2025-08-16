@@ -246,34 +246,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar */}
-        <div className="sticky top-0 z-40 bg-white shadow-sm border-b" onMouseMove={refreshSession} onKeyDown={refreshSession}>
-          <div className="flex items-center justify-between h-16 px-6">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500"
-            >
-              ☰
-            </button>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Админ панель</span>
-              <button
-                onClick={() => {
-                  setIsAuthorized(false);
-                  setShowLoginForm(false);
-                  if (typeof window !== 'undefined') localStorage.removeItem(SESSION_STORAGE_KEY);
-                }}
-                className="text-sm text-red-600 hover:text-red-700"
-              >
-                Выйти
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Page content */}
-        <main className="p-6">
+        {/* Removed top bar to align content with sidebar menu */}
+        <main className="p-6 pt-6" onMouseMove={refreshSession} onKeyDown={refreshSession}>
           {children}
         </main>
       </div>
