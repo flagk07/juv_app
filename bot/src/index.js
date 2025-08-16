@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const { Bot, session, GrammyError, HttpError } = require('grammy');
 const OpenAI = require('openai');
+const fetch = require('node-fetch');
 
 // Debug: Check environment variables
 console.log('🔧 Environment variables check:');
@@ -67,6 +68,12 @@ function createInlineKeyboard(userId) {
     ],
     [
       {
+        text: "🧾 Заказы",
+        callback_data: "orders"
+      }
+    ],
+    [
+      {
         text: "🤖 AI-помощник",
         callback_data: "ai_assistant"
       }
@@ -91,12 +98,12 @@ function createInlineKeyboard(userId) {
   };
 }
 
-// Set up bot commands (only basic commands, no admin commands in menu)
-bot.api.setMyCommands([
-  { command: "shop", description: "Открыть магазин" },
-  { command: "assistant", description: "AI-помощник" },
-  { command: "help", description: "Помощь" }
-]);
+  // Set up bot commands (only user-facing minimal set)
+  bot.api.setMyCommands([
+    { command: "shop", description: "Открыть магазин" },
+    { command: "assistant", description: "AI-помощник" },
+    { command: "help", description: "Помощь" }
+  ]);
 
 // Start command
 bot.command("start", async (ctx) => {
@@ -242,6 +249,36 @@ bot.on("callback_query", async (ctx) => {
     const callbackData = ctx.callbackQuery.data;
     
     switch (callbackData) {
+      case 'orders': {
+        const telegramId = ctx.from.id;
+        const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders?select=id,items,status,created_at&telegram_id=eq.${telegramId}&order=created_at.desc&limit=20`;
+        const headers = {
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        };
+        try {
+          const resp = await fetch(url, { headers });
+          const orders = resp.ok ? await resp.json() : [];
+          if (!orders.length) {
+            await ctx.reply('🧾 У вас пока нет заказов.');
+          } else {
+            const statusMap = { new: 'заказ создан', pending: 'заказ создан', processing: 'в обработке', completed: 'завершен' };
+            const lines = orders.map(o => {
+              const shortId = String(o.id).slice(0,8);
+              const items = Array.isArray(o.items) ? o.items : [];
+              const itemsText = items.map(it => `${it.title || 'Товар'}${it.sku ? ` (${it.sku})` : ''}`).join(', ');
+              const statusText = statusMap[o.status] || o.status || 'заказ создан';
+              return `№ ${shortId}\n${itemsText || 'без позиций'}\nСтатус: ${statusText}`;
+            });
+            await ctx.reply(`🧾 Ваши заказы:\n\n${lines.join('\n\n')}`);
+          }
+        } catch (e) {
+          console.error('Orders error:', e);
+          await ctx.reply('Не удалось получить список заказов. Попробуйте позже.');
+        }
+        break;
+      }
       case 'ai_assistant':
         await logUserAction(ctx.from.id, ctx.from.username, 'callback_ai_assistant');
         

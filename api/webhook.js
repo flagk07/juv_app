@@ -273,6 +273,12 @@ export default async function handler(req, res) {
             ],
             [
               {
+                text: '🧾 Заказы',
+                callback_data: 'orders'
+              }
+            ],
+            [
+              {
                 text: '🤖 Помощь',
                 callback_data: 'help_assistant'
               }
@@ -388,6 +394,45 @@ export default async function handler(req, res) {
           '💰 Ценовыми консультациями\n\n' +
           'Задайте ваш вопрос:'
         );
+      }
+      else if (data === 'orders') {
+        // Fetch user orders from Supabase
+        try {
+          const { data: orders, error } = await supabase
+            .from('orders')
+            .select('id, items, status, created_at')
+            .eq('telegram_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+          if (error) throw error;
+
+          if (!orders || orders.length === 0) {
+            await sendMessage(chatId, '🧾 У вас пока нет заказов.');
+          } else {
+            const statusMap = {
+              new: 'заказ создан',
+              pending: 'заказ создан',
+              processing: 'в обработке',
+              completed: 'завершен'
+            };
+
+            const lines = orders.map((o) => {
+              const shortId = (o.id || '').toString().slice(0, 8);
+              const items = Array.isArray(o.items) ? o.items : [];
+              const itemsText = items
+                .map((it) => `${it.title || 'Товар'}${it.sku ? ` (${it.sku})` : ''}`)
+                .join(', ');
+              const statusText = statusMap[o.status] || o.status || 'заказ создан';
+              return `№ ${shortId}\n${itemsText || 'без позиций'}\nСтатус: ${statusText}`;
+            });
+
+            await sendMessage(chatId, `🧾 Ваши заказы:\n\n${lines.join('\n\n')}`);
+          }
+        } catch (e) {
+          console.error('Orders fetch error:', e);
+          await sendMessage(chatId, 'Не удалось получить список заказов. Попробуйте позже.');
+        }
       }
       else if (data === 'stats') {
         console.log('📊 Stats button pressed by user:', userId);
@@ -505,6 +550,12 @@ export default async function handler(req, res) {
                 {
                   text: '🛍 Магазин',
                   web_app: { url: 'https://juv-app.vercel.app/' }
+                }
+              ],
+              [
+                {
+                  text: '🧾 Заказы',
+                  callback_data: 'orders'
                 }
               ],
               [
