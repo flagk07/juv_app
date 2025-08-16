@@ -1,7 +1,6 @@
 'use client'
 
 import { Product } from '@/lib/supabase'
-import { Eye, Plus } from 'lucide-react'
 
 interface ProductCardProps {
   product: Product
@@ -9,7 +8,7 @@ interface ProductCardProps {
   onAddToCart: (quantity: number) => void
 }
 
-export default function ProductCard({ product, onViewDetails, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, onViewDetails }: ProductCardProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -53,25 +52,6 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
           <span className="text-sm text-primary-500">
             {product.in_stock ? 'В наличии' : 'Нет в наличии'}
           </span>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-3 mt-auto">
-          <button
-            onClick={onViewDetails}
-            className="flex-1 bg-[#111] text-white font-medium py-3 px-6 rounded-full transition-colors duration-200 flex items-center justify-center gap-2 hover:bg-[#333]"
-          >
-            <Eye size={16} />
-            <span>Подробнее</span>
-          </button>
-          <button
-            onClick={() => onAddToCart(1)}
-            disabled={!product.in_stock}
-            className="flex-1 bg-[#111] text-white font-medium py-3 px-6 rounded-full transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#333]"
-          >
-            <Plus size={16} />
-            <span>В корзину</span>
-          </button>
         </div>
       </div>
     </div>
