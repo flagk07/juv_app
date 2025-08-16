@@ -93,12 +93,9 @@ function createInlineKeyboard(userId) {
 
 // Set up bot commands (only basic commands, no admin commands in menu)
 bot.api.setMyCommands([
-  { command: "start", description: "Запустить бота" },
-  { command: "menu", description: "Показать меню" },
   { command: "shop", description: "Открыть магазин" },
   { command: "assistant", description: "AI-помощник" },
-  { command: "help", description: "Помощь" },
-  { command: "stop", description: "Остановить AI-диалог" }
+  { command: "help", description: "Помощь" }
 ]);
 
 // Start command
