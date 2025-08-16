@@ -6,6 +6,9 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+// OpenAI model selection
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
+
 // OpenAI integration
 async function callOpenAI(question) {
   try {
@@ -16,7 +19,7 @@ async function callOpenAI(question) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: OPENAI_MODEL,
         messages: [
           {
             role: 'system',

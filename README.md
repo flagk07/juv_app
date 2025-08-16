@@ -53,6 +53,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # OpenAI
 OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-5
 
 # WebApp
 WEBAPP_URL=http://localhost:3000

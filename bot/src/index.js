@@ -10,11 +10,15 @@ console.log('BOT_TOKEN length:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.l
 console.log('BOT_TOKEN first 10 chars:', process.env.BOT_TOKEN ? process.env.BOT_TOKEN.substring(0, 10) + '...' : 'N/A');
 console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'SET' : 'NOT SET');
 console.log('WEBAPP_URL:', process.env.WEBAPP_URL || 'DEFAULT');
+console.log('OPENAI_MODEL:', process.env.OPENAI_MODEL || 'gpt-5');
 
 // Initialize services
 console.log('🤖 Creating bot instance...');
 const bot = new Bot(process.env.BOT_TOKEN);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Model selection
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
 
 // WebApp URL
 const WEBAPP_URL = process.env.WEBAPP_URL || "https://juv-app.vercel.app/";
@@ -316,7 +320,7 @@ bot.on("message:text", async (ctx) => {
 
     // Generate AI response
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: OPENAI_MODEL,
       messages: messages,
       max_tokens: 300,
       temperature: 0.7
