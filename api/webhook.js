@@ -107,7 +107,12 @@ async function ensureUser(telegramId, username) {
 
 // Helper to get bot token with fallback
 function getBotToken() {
-  return process.env.BOT_TOKEN || '7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws';
+  const token = process.env.BOT_TOKEN;
+  if (!token) {
+    console.error('❌ BOT_TOKEN is not set in environment');
+    throw new Error('BOT_TOKEN is not configured');
+  }
+  return token;
 }
 
 // Send message to Telegram
