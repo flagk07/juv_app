@@ -19,37 +19,35 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
   }
 
   return (
-    <div className="bg-white rounded-[1.5rem] border border-[#eee] overflow-hidden shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] flex flex-col">
+    <div className="bg-transparent rounded-none border-0 overflow-visible shadow-none transition-none flex flex-col">
       {/* Product Image */}
-      <div className="relative aspect-square overflow-hidden bg-white cursor-pointer" onClick={onViewDetails}>
+      <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={onViewDetails}>
         {product.image_url ? (
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-contain bg-white"
+            className="w-full h-full object-contain"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-white" />
+          <div className="w-full h-full flex items-center justify-center" />
         )}
       </div>
 
       {/* Product Info */}
-      <div className="px-4 py-4 flex flex-col flex-1">
-        <h3 className="card-title text-[1.1rem] font-semibold text-[#111] line-clamp-2 cursor-pointer" onClick={onViewDetails}>
+      <div className="px-0 pt-3 flex flex-col flex-1">
+        <h3 className="text-[1.1rem] font-medium text-[#111] line-clamp-2 cursor-pointer" onClick={onViewDetails}>
           {product.name}
         </h3>
-        
         {product.description && (
-          <p className="card-desc text-sm text-[#666] mt-2 line-clamp-2">{product.description}</p>
+          <p className="text-sm text-[#666] mt-1 line-clamp-2">{product.description}</p>
         )}
-
         {product.sku && (
           <div className="text-xs text-gray-400 mt-1">АРТ: {product.sku}</div>
         )}
 
-        <div className="mt-3 flex items-center justify-between">
-          <span className="price font-semibold text-[1rem] text-[#111]">
+        <div className="mt-2 flex items-center justify-between">
+          <span className="font-semibold text-[1rem] text-[#111]">
             {formatPrice(product.price)}
           </span>
           <span className="text-sm text-primary-500">
@@ -66,7 +64,6 @@ export default function ProductCard({ product, onViewDetails, onAddToCart }: Pro
             <Eye size={16} />
             <span>Подробнее</span>
           </button>
-          
           <button
             onClick={() => onAddToCart(1)}
             disabled={!product.in_stock}
