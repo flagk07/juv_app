@@ -221,7 +221,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
         </div>
         
-        <nav className="mt-6">
+        <nav className="mt-0">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -246,8 +246,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Align content with sidebar items (64px header + 24px margin = 88px) and show Logout */}
-        <main className="px-6 pt-[88px] pb-6 relative" onMouseMove={refreshSession} onKeyDown={refreshSession}>
+        {/* Align content with sidebar items (64px header) and show Logout */}
+        <main className="px-6 pt-[calc(64px+env(safe-area-inset-top))] pb-6 relative" onMouseMove={refreshSession} onKeyDown={refreshSession}>
           <button
             onClick={() => {
               setIsAuthorized(false);
