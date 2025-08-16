@@ -53,7 +53,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
         {/* Scrollable content */}
         <div className="p-4 space-y-4 overflow-y-auto">
           {/* Product Image */}
-          <div className="relative aspect-square rounded-xl overflow-hidden bg-cream-100">
+          <div className="relative aspect-square overflow-hidden">
             {product.image_url ? (
               <img
                 src={product.image_url}
@@ -62,7 +62,7 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-cream-200" />
+              <div className="w-full h-full flex items-center justify-center" />
             )}
           </div>
 
