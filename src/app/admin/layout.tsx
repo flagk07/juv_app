@@ -109,6 +109,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     checkAdminAccess();
   }, []);
 
+  // Measure sidebar header height and nav offset to align content baseline
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const headerEl = document.getElementById('admin-sidebar-header');
+    const navEl = document.getElementById('admin-sidebar-nav');
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 64;
+    const navMarginTop = navEl ? parseInt(window.getComputedStyle(navEl).marginTop || '0', 10) : 0;
+    const offset = Math.max(0, Math.round(headerH + navMarginTop));
+    document.documentElement.style.setProperty('--adminTopOffset', `${offset}px`);
+  }, [pathname]);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -211,7 +222,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
+        <div id="admin-sidebar-header" className="flex items-center justify-between h-16 px-6 border-b">
           <h1 className="text-xl font-bold text-gray-900">JUV Admin</h1>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -221,7 +232,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
         </div>
         
-        <nav className="mt-0">
+        <nav id="admin-sidebar-nav" className="mt-0">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -246,8 +257,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Align content with sidebar items (64px header) and show Logout */}
-        <main className="px-6 pt-[calc(64px+env(safe-area-inset-top))] pb-6 relative" onMouseMove={refreshSession} onKeyDown={refreshSession}>
+        {/* Align content baseline using measured offset and show Logout */}
+        <main className="px-6 pb-6 relative" style={{ paddingTop: 'var(--adminTopOffset, 64px)' }} onMouseMove={refreshSession} onKeyDown={refreshSession}>
           <button
             onClick={() => {
               setIsAuthorized(false);
