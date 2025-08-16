@@ -173,12 +173,10 @@ bot.command("assistant", async (ctx) => {
 // Help command
 bot.command("help", async (ctx) => {
   let helpText = "📋 Доступные команды:\n\n" +
-    "🛍 /shop - Открыть магазин\n" +
-    "🤖 /assistant - AI-помощник\n" +
-    "📞 /start - Главное меню\n" +
-    "📋 /menu - Показать меню\n" +
-    "❌ /stop - Завершить диалог с AI\n" +
-    "❓ /help - Эта справка\n\n";
+    "🛍 Открыть магазин (/shop)\n" +
+    "🤖 AI-помощник (/assistant)\n" +
+    "📋 Меню (/menu)\n" +
+    "🛑 Стоп (/stop)\n\n";
 
   // Добавляем админскую команду только для админа
   if (isAdmin(ctx.from.id)) {
@@ -344,7 +342,7 @@ bot.on("message:text", async (ctx) => {
       `🤖 ${response}\n\n` +
       `💬 Продолжайте задавать вопросы! Я помню наш разговор.\n` +
       `🛍 Чтобы открыть магазин, используйте /shop\n` +
-      `❌ Чтобы завершить диалог, напишите /stop`
+      `🛑 Остановить диалог с AI-помощником /stop`
     );
 
     // Log AI response

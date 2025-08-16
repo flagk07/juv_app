@@ -266,7 +266,7 @@ export default async function handler(req, res) {
         await sendMessage(
           chatId,
           '📋 **Меню JUV**\n\n' +
-          'Выберите нужное действие:',
+          'Доступные действия:',
           menuKeyboard
         );
       }
@@ -274,11 +274,10 @@ export default async function handler(req, res) {
         await sendMessage(
           chatId,
           '📋 Доступные команды:\n\n' +
-          '🛍 /shop - Открыть магазин\n' +
-          '🤖 /assistant - AI-помощник\n' +
-          '📋 /menu - Показать меню\n' +
-          '📞 /start - Главное меню\n' +
-          '❓ /help - Эта справка\n\n' +
+          '🛍 Открыть магазин (/shop)\n' +
+          '🤖 AI-помощник (/assistant)\n' +
+          '📋 Меню (/menu)\n' +
+          '🛑 Стоп (/stop)\n\n' +
           'Используйте кнопки меню для удобной навигации!'
         );
       }
@@ -318,7 +317,8 @@ export default async function handler(req, res) {
           chatId,
           `🤖 ${aiResponse}\n\n` +
           `❓ Есть еще вопросы? Просто напишите их.\n` +
-          `🛍 Чтобы открыть магазин, используйте /menu`
+          `🛍 Чтобы открыть магазин, используйте /menu\n` +
+          `🛑 Остановить диалог с AI-помощником /stop`
         );
 
         await logUserAction(userId, username, 'ai_response', { 

@@ -32,12 +32,9 @@ export default function Home() {
       logUserAction(user.id, user.username, 'open_webapp')
     }
 
-    // Setup menu button handler
+    // Hide menu main button in shop WebApp
     if (tgApp.isSupported()) {
-      tgApp.showMainButton('Меню', () => {
-        const menuData = { action: 'show_menu', user_id: user?.id };
-        tgApp.sendData(JSON.stringify(menuData));
-      });
+      try { tgApp.hideMainButton() } catch {}
     }
 
     // Load products and cart
@@ -45,7 +42,7 @@ export default function Home() {
     loadCart()
 
     return () => {
-      if (tgApp.isSupported()) tgApp.hideMainButton()
+      if (tgApp.isSupported()) try { tgApp.hideMainButton() } catch {}
     }
   }, [])
 
