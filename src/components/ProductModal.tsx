@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Product, logUserAction } from '@/lib/supabase'
-import { TelegramWebApp } from '@/lib/telegram'
+import { Product } from '@/lib/supabase'
 import { X, Minus, Plus } from 'lucide-react'
 
 interface ProductModalProps {
@@ -36,9 +35,6 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
 
   const handleAddToCart = () => {
     onAddToCart(quantity)
-    const tgApp = TelegramWebApp.getInstance()
-    const user = tgApp.getUser()
-    if (user) logUserAction(user.id, user.username, 'view_product', { product_id: product.id })
   }
 
   const onScroll = () => {

@@ -77,6 +77,43 @@ export default function Home() {
 
   const loadCart = async () => {
     try {
+      // Try to load from server cart if Telegram user exists, else fallback to local
+      const tg = TelegramWebApp.getInstance()
+      const user = tg.getUser()
+      if (user) {
+        const { data: rows, error } = await supabase
+          .from('cart_items')
+          .select('product_id, quantity')
+          .eq('telegram_id', user.id)
+        if (!error && rows && rows.length > 0) {
+          const productIds = rows.map(r => r.product_id)
+          const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .in('id', productIds)
+          const productById = new Map((products || []).map(p => [p.id, p]))
+          const serverCart = rows.map(r => ({
+            id: r.product_id, // stable id per product for UI actions
+            product_id: r.product_id,
+            quantity: r.quantity,
+            product: productById.get(r.product_id),
+          }))
+          localStorage.setItem('juv_cart', JSON.stringify(serverCart))
+          setCartItems(serverCart)
+          return
+        } else if (!error && rows && rows.length === 0) {
+          // Server is empty: push local cart up
+          const raw = localStorage.getItem('juv_cart')
+          const local: any[] = raw ? JSON.parse(raw) : []
+          if (local.length > 0) {
+            const upserts = local.map((i) => ({ telegram_id: user.id, product_id: i.product_id, quantity: i.quantity }))
+            try {
+              await supabase.from('cart_items').upsert(upserts, { onConflict: 'telegram_id,product_id' })
+            } catch {}
+          }
+        }
+      }
+      // Fallback to local
       const raw = localStorage.getItem('juv_cart')
       const data = raw ? JSON.parse(raw) : []
       setCartItems(data)
@@ -87,16 +124,55 @@ export default function Home() {
     try {
       const existingItem = cartItems.find((i) => i.product_id === product.id)
       let next
+      const newQuantity = existingItem ? existingItem.quantity + quantity : quantity
       if (existingItem) {
         next = cartItems.map((i) => i.product_id === product.id ? { ...i, quantity: i.quantity + quantity } : i)
       } else {
         next = [
           ...cartItems,
-          { id: crypto.randomUUID(), product_id: product.id, quantity, product }
+          { id: product.id, product_id: product.id, quantity, product }
         ]
       }
+      // Persist to server if Telegram user is available
+      try {
+        const user = telegramApp?.getUser()
+        if (user) {
+          // check existing row
+          const { data: row } = await supabase
+            .from('cart_items')
+            .select('id, quantity')
+            .eq('telegram_id', user.id)
+            .eq('product_id', product.id)
+            .maybeSingle()
+          if (row) {
+            await supabase
+              .from('cart_items')
+              .update({ quantity: newQuantity })
+              .eq('id', row.id)
+          } else {
+            await supabase
+              .from('cart_items')
+              .insert({ telegram_id: user.id, product_id: product.id, quantity: newQuantity })
+          }
+        }
+      } catch {}
       localStorage.setItem('juv_cart', JSON.stringify(next))
       setCartItems(next)
+
+      // Log add to cart action
+      try {
+        const user = telegramApp?.getUser()
+        if (user) {
+          await logUserAction(user.id, user.username, 'add_to_cart', {
+            product_id: product.id,
+            sku: product.sku,
+            name: product.name,
+            price: product.price,
+            added_quantity: quantity,
+            cart_quantity: newQuantity,
+          })
+        }
+      } catch {}
 
       telegramApp?.hapticFeedback('success')
       showToast('Товар добавлен в корзину')
@@ -110,17 +186,58 @@ export default function Home() {
     const next = cartItems.map((i) => i.id === itemId ? { ...i, quantity: newQuantity } : i)
     localStorage.setItem('juv_cart', JSON.stringify(next))
     setCartItems(next)
+    // server sync
+    try {
+      const user = telegramApp?.getUser()
+      if (user) {
+        const item = next.find(i => i.id === itemId)
+        if (item) {
+          supabase
+            .from('cart_items')
+            .update({ quantity: item.quantity })
+            .eq('telegram_id', user.id)
+            .eq('product_id', item.product_id)
+            .then(() => {})
+        }
+      }
+    } catch {}
   }
 
   const removeItem = (itemId: string) => {
     const next = cartItems.filter((i) => i.id !== itemId)
     localStorage.setItem('juv_cart', JSON.stringify(next))
     setCartItems(next)
+    // server sync
+    try {
+      const user = telegramApp?.getUser()
+      if (user) {
+        const removed = cartItems.find(i => i.id === itemId)
+        if (removed) {
+          supabase
+            .from('cart_items')
+            .delete()
+            .eq('telegram_id', user.id)
+            .eq('product_id', removed.product_id)
+            .then(() => {})
+        }
+      }
+    } catch {}
   }
 
   const clearCart = () => {
     localStorage.removeItem('juv_cart')
     setCartItems([])
+    // server sync
+    try {
+      const user = telegramApp?.getUser()
+      if (user) {
+        supabase
+          .from('cart_items')
+          .delete()
+          .eq('telegram_id', user.id)
+          .then(() => {})
+      }
+    } catch {}
   }
 
   const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)

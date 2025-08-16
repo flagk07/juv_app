@@ -43,7 +43,7 @@ cd juv
 Создайте файл `.env` в корне проекта:
 ```env
 # Telegram Bot
-BOT_TOKEN=7726909438:AAE25m0W57yjZjk0fO4KCPGsspeldX8h_ws
+BOT_TOKEN=ваш_токен_бота
 ADMIN_ID=195830791
 BOT_USERNAME=juv_app_bot
 
