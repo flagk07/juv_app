@@ -279,8 +279,8 @@ export default async function handler(req, res) {
             ],
             [
               {
-                text: '🤖 Помощь',
-                callback_data: 'help_assistant'
+                text: '🤖 AI-помощник',
+                callback_data: 'ai_assistant'
               }
             ],
             [
