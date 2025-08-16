@@ -20,7 +20,9 @@ export default function AddProductPage() {
     name: '',
     description: '',
     price: '',
-    image_url: '',
+    image_url1: '',
+    image_url2: '',
+    image_url3: '',
     category: 'rings',
     in_stock: true
   });
@@ -37,12 +39,24 @@ export default function AddProductPage() {
       // Генерируем артикул из 8 цифр
       const sku = Math.floor(10000000 + Math.random() * 90000000).toString();
 
+      // Собираем массив изображений (1..3)
+      const images = [formData.image_url1, formData.image_url2, formData.image_url3]
+        .map((u) => u.trim())
+        .filter((u) => !!u);
+
+      if (images.length === 0) {
+        alert('Добавьте хотя бы одно фото (URL)');
+        setLoading(false);
+        return;
+      }
+
       // Создаем новый товар
       const newProduct = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        image_url: formData.image_url,
+        // Храним массив фото в image_url как JSON-строку (совместимость со схемой)
+        image_url: JSON.stringify(images),
         category: formData.category,
         in_stock: formData.in_stock,
         sku
@@ -111,6 +125,11 @@ export default function AddProductPage() {
       </div>
     );
   }
+
+  // Превью картинок
+  const previewImages = [formData.image_url1, formData.image_url2, formData.image_url3]
+    .map((u) => u.trim())
+    .filter((u) => !!u);
 
   return (
     <div className="space-y-6">
@@ -203,17 +222,33 @@ export default function AddProductPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL изображения
-              </label>
+            {/* Изображения 1-3 */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Фото (1–3 URL)</label>
               <input
                 type="url"
-                name="image_url"
-                value={formData.image_url}
+                name="image_url1"
+                value={formData.image_url1}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com/image-1.jpg"
+              />
+              <input
+                type="url"
+                name="image_url2"
+                value={formData.image_url2}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/image.jpg"
+                placeholder="https://example.com/image-2.jpg (необязательно)"
+              />
+              <input
+                type="url"
+                name="image_url3"
+                value={formData.image_url3}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://example.com/image-3.jpg (необязательно)"
               />
             </div>
 
@@ -256,16 +291,16 @@ export default function AddProductPage() {
           <div className="p-6">
             {formData.name ? (
               <div className="space-y-4">
-                {formData.image_url && (
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
-                    <img
-                      src={formData.image_url}
-                      alt={formData.name}
-                      className="w-full h-48 object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                {previewImages.length > 0 && (
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img src={previewImages[0]} alt={formData.name} className="w-full h-full object-contain" />
+                    {previewImages.length > 1 && (
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {previewImages.map((_, i) => (
+                          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-cream-400' : 'bg-cream-300'}`}></span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 

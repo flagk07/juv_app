@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Product, logUserAction } from '@/lib/supabase'
 import { TelegramWebApp } from '@/lib/telegram'
 import { X, Minus, Plus } from 'lucide-react'
@@ -11,32 +11,41 @@ interface ProductModalProps {
   onAddToCart: (quantity: number) => void
 }
 
+function parseImages(image_url?: string): string[] {
+  if (!image_url) return []
+  try {
+    const arr = JSON.parse(image_url)
+    if (Array.isArray(arr)) return arr.filter(Boolean)
+  } catch {}
+  return [image_url]
+}
+
 export default function ProductModal({ product, onClose, onAddToCart }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1)
+  const images = useMemo(() => parseImages(product.image_url), [product.image_url])
+  const [index, setIndex] = useState(0)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-    }).format(price)
-  }
+  const formatPrice = (price: number) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(price)
 
   const handleAddToCart = () => {
     onAddToCart(quantity)
     const tgApp = TelegramWebApp.getInstance()
     const user = tgApp.getUser()
-    if (user) {
-      logUserAction(user.id, user.username, 'view_product', { product_id: product.id })
-    }
+    if (user) logUserAction(user.id, user.username, 'view_product', { product_id: product.id })
+  }
+
+  const onScroll = () => {
+    const el = containerRef.current
+    if (!el) return
+    const i = Math.round(el.scrollLeft / el.clientWidth)
+    if (i !== index) setIndex(i)
   }
 
   return (
@@ -52,17 +61,25 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
 
         {/* Scrollable content */}
         <div className="p-4 space-y-4 overflow-y-auto">
-          {/* Product Image */}
+          {/* Product Image(s) */}
           <div className="relative aspect-square overflow-hidden">
-            {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-full object-contain"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center" />
+            <div ref={containerRef} onScroll={onScroll} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+              {(images.length ? images : [undefined]).map((src, i) => (
+                <div key={i} className="w-full h-full flex-shrink-0 snap-center">
+                  {src ? (
+                    <img src={src} alt={product.name} className="w-full h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center" />
+                  )}
+                </div>
+              ))}
+            </div>
+            {images.length > 1 && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                {images.map((_, i) => (
+                  <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-cream-400' : 'bg-cream-300'}`}></span>
+                ))}
+              </div>
             )}
           </div>
 
