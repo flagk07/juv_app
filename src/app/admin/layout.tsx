@@ -246,8 +246,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Removed top bar to align content with sidebar menu */}
-        <main className="p-6 pt-6" onMouseMove={refreshSession} onKeyDown={refreshSession}>
+        {/* Align content with sidebar items (64px header + 24px margin = 88px) and show Logout */}
+        <main className="px-6 pt-[88px] pb-6 relative" onMouseMove={refreshSession} onKeyDown={refreshSession}>
+          <button
+            onClick={() => {
+              setIsAuthorized(false);
+              setShowLoginForm(false);
+              if (typeof window !== 'undefined') localStorage.removeItem(SESSION_STORAGE_KEY);
+            }}
+            className="absolute right-6 top-4 text-sm text-red-600 hover:text-red-700"
+          >
+            Выйти
+          </button>
           {children}
         </main>
       </div>
