@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Product, logUserAction } from '@/lib/supabase'
 import { TelegramWebApp } from '@/lib/telegram'
 import { X, Minus, Plus } from 'lucide-react'
-import Image from 'next/image'
 
 interface ProductModalProps {
   product: Product
@@ -56,7 +55,12 @@ export default function ProductModal({ product, onClose, onAddToCart }: ProductM
           {/* Product Image */}
           <div className="relative aspect-square rounded-xl overflow-hidden bg-cream-100">
             {product.image_url ? (
-              <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full h-full object-contain"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-cream-200" />
             )}
