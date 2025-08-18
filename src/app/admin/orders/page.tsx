@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatMoscow } from '@/lib/date'
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -87,7 +86,7 @@ export default function OrdersPage() {
                 <div key={o.id} className="border border-cream-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium">№ {o.id.slice(-8)} · {formatMoscow(o.created_at)}</div>
+                      <div className="font-medium">№ {o.id.slice(-8)} · {new Date(o.created_at).toLocaleString()}</div>
                       <div className="text-sm text-gray-600">Телеграм ID: {o.telegram_id}</div>
                     </div>
                     <div className="text-right">

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { formatMoscow } from '@/lib/date'
 import { migrateLocalStorageToSupabase, syncSupabaseToLocalStorage, testSupabaseConnection } from '@/lib/migration'
 
 export default function DebugPage() {
@@ -55,7 +54,7 @@ export default function DebugPage() {
         rawData,
         parsedData,
         error,
-        timestamp: formatMoscow(new Date())
+        timestamp: new Date().toLocaleString()
       });
 
       console.log('🔍 Debug info:', {
@@ -68,7 +67,7 @@ export default function DebugPage() {
       setDebugInfo(prev => ({ 
         ...prev, 
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: formatMoscow(new Date())
+        timestamp: new Date().toLocaleString()
       }));
     }
   };

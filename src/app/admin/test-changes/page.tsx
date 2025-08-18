@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { formatMoscow } from '@/lib/date'
 
 export default function TestChangesPage() {
   const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
-    setCurrentTime(formatMoscow(new Date()));
+    setCurrentTime(new Date().toLocaleString());
   }, []);
 
   const changes = [
