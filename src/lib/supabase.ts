@@ -40,6 +40,7 @@ export interface CartItem {
 export interface Order {
   id: string
   telegram_id: number
+  telegram_username?: string
   user_id?: string
   email?: string
   phone?: string
