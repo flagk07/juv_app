@@ -58,6 +58,34 @@ export default function Home() {
     return () => window.removeEventListener('cart:open', openHandler)
   }, [])
 
+  useEffect(() => {
+    // Realtime sync: subscribe to cart changes for current Telegram user
+    const tg = TelegramWebApp.getInstance()
+    const user = tg.getUser()
+    if (!user) return
+
+    const channel = supabase
+      .channel(`cart_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cart_items',
+          filter: `telegram_id=eq.${user.id}`,
+        },
+        () => {
+          // Reload cart on any insert/update/delete affecting this user
+          loadCart()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      try { supabase.removeChannel(channel) } catch {}
+    }
+  }, [])
+
   const loadProducts = async () => {
     try {
       const { data, error } = await supabase
